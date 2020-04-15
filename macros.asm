@@ -104,6 +104,31 @@ ConcatText macro string1, string2, numBytes
     EndGC:
 endm
 
+CompareString macro string1, string2, flag
+    local ENDGC, RepeatComparison, EQUALS, NOTEQUALS
+    push di
+    push cx
+    
+    mov cx, SIZEOF string1    
+
+    RepeatComparison:
+        mov al, string1[di]
+        mov ah, string2[di]        
+        cmp al, ah
+            jne NOTEQUALS
+        inc di
+    Loop RepeatComparison
+    EQUALS:
+        mov flag[0], 'T'
+        jmp ENDGC
+    NOTEQUALS:
+        mov flag[0], 'F'
+        jmp ENDGC
+    EndGC:
+        pop cx
+        pop di
+endm
+
 ; TESTING THE VALUE THAT IS IN AX
 TestingAX macro
 
@@ -158,6 +183,67 @@ Sound macro hz
     out al, 11111100b
     out 61h, al
 endm
+
+;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+;\\\\\\\\\\\\\\\ SORTING METHODS \\\\\\\\\\\\\\\\\\\\\
+;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+BubbleSort macro array
+
+endm
+
+QuickSort macro array
+
+endm
+
+ShellSort macro array
+
+endm
+
+;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+;\\\\\\\\\\\\\\\\     USERS     \\\\\\\\\\\\\\\\\\\\\\
+;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+ReadUsers macro file, route, handlerP
+    OpenFile route, handlerP
+    ReadFile handlerP, file, SIZEOF file
+    CloseFile handlerP
+endm
+
+CheckExistingUser macro user
+
+endm
+
+CheckPass macro pass
+
+endm
+
+LoginM macro user, pass
+
+endm
+
+;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+;\\\\\\\\\\\\\\\\    TESTING    \\\\\\\\\\\\\\\\\\\\\\
+;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+ReadFileOfUsers macro file
+    local ENDGC, ReadLoop, User, Pass, maxPoints, minTime
+
+    ; For the file.
+    ; ',' for the separation of information
+    ; 13, 10 for the separation of users
+    ; user,pass,maxPoints,minTime
+    ; '#' for the end of file
+    xor di, di
+    
+    mov cx, SIZEOF file
+    ReadLoop:
+    
+    Loop ReadLoop
+
+    ENDGC:
+endm
+
 
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 ;\\\\\\\\\\\\\\\\     FILES     \\\\\\\\\\\\\\\\\\\\\\

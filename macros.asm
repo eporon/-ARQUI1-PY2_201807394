@@ -188,23 +188,85 @@ endm
 ;\\\\\\\\\\\\\\\ SORTING METHODS \\\\\\\\\\\\\\\\\\\\\
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-BubbleSort macro array
+; -------------------- BUBBLE SORT -------------------- ;
+    BubbleSort macro array, ascOdec
+        local JUMP3, JUMP2, JUMP1, Ascendent, Descendent
+        push di
+        ; GET THE SIZE OF NON ZERO ATRIBUTES OF THE ARRAY AND MOVE IT TO THE BX REGISTRY
+        xor di, di
+        JUMP3:
+            mov si, di
+            inc si
+        JUMP2:
+            mov al, array[di]
+            mov ah, array[si]
+            mov bl, ascOdec
+            cmp bl, 01h
+                je Ascendent
+            Descendent:
+                cmp al, ah
+                    jge JUMP1
+                mov array[di], ah
+                mov array[si], al
+                jmp JUMP1
+            Ascendent:
+                cmp al, ah
+                    jle JUMP1
+                mov array[di], ah
+                mov array[si], al
+        JUMP1:
+            inc si
+            cmp si, SIZEOF array
+                jnz JUMP2
+            inc di
+            mov cx, SIZEOF array
+            dec cx
+            cmp di, cx
+                jnz JUMP3
+        pop di
+    endm
 
-endm
+; -------------------- QUICK SORT -------------------- ;
+    QuickSort macro array
+        local ENDGC
+        
+        mov al, lowP
+        mov ah, highP
+        cmp al, ah
+            jle ENDGC
+        
+        Partition array, lowP, highP
 
-QuickSort macro array
+        mov bl, lowP
 
-endm
+        dec ax
+        
+        inc ax
+        inc ax
+        mov bl, highP
+        
 
-ShellSort macro array
+        ENDGC:
+    endm
 
-endm
+    ; MOVE TO AX THE VALUE OF PARTITION
+    Partition macro array, lowP, highP
+
+
+
+    endm
+
+; -------------------- SHELL SORT -------------------- ;
+    ShellSort macro array
+        
+    endm
 
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 ;\\\\\\\\\\\\\\\\     USERS     \\\\\\\\\\\\\\\\\\\\\\
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 ReadUsers macro file, route, handlerP
+    Clean file, SIZEOF file, '$'
     OpenFile route, handlerP
     ReadFile handlerP, file, SIZEOF file
     CloseFile handlerP

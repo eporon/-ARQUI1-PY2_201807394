@@ -33,6 +33,11 @@ include macros.asm
         route db 'users.us'
         handlerUsers dw ?
 
+    ; ADMIN VARIABLES
+        points db 1000 dup('$')
+        times db 1000 dup('$')
+        ascOdesOPT db 00h
+
     ; GAME VARIABLES
         actualUser db 20 dup('$')
         actualLevel db 20 dup('$')

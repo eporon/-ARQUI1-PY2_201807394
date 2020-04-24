@@ -104,7 +104,7 @@ ConcatText macro string1, string2, numBytes
     EndGC:
 endm
 
-CompareString macro string1, string2, flag
+CompareString macro string1, string2
     local ENDGC, RepeatComparison, EQUALS, NOTEQUALS
     push di
     push cx
@@ -113,16 +113,16 @@ CompareString macro string1, string2, flag
 
     RepeatComparison:
         mov al, string1[di]
-        mov ah, string2[di]        
+        mov ah, string2[di]
         cmp al, ah
             jne NOTEQUALS
         inc di
     Loop RepeatComparison
     EQUALS:
-        mov flag[0], 'T'
+        mov al, 01h
         jmp ENDGC
     NOTEQUALS:
-        mov flag[0], 'F'
+        mov al, 00h
         jmp ENDGC
     EndGC:
         pop cx
@@ -168,96 +168,105 @@ endm
 ; 1 - 20 : 100 | 21 - 40 : 300 | 41 - 60 : 500 | 61 - 80 : 700 | 81 - 99 : 900
 ; SOUND
 Sound macro hz
+    local One, Three, Five, Seven, SoundF
+
+    Push ax
     mov al, 86h
     out 43h, al
-    mov ax, (1193180 / hz)
-    out 42h, al
-    mov al, ah
-    out 42h, al
-    in al, 61h
-    or al, 00000011b
-    out 61h, al
-    Delay time
-    ; STOP
-    in al, 61h
-    out al, 11111100b
-    out 61h, al
+
+
+    cmp hz, 20
+        jbe One
+    cmp hz, 40
+        jbe Three
+    cmp hz, 60
+        jbe Five
+    cmp hz, 80
+        jbe Seven
+    mov ax, (1193180 / 900)
+    jmp SoundF
+    One:
+        mov ax, (1193180 / 100)
+        jmp SoundF
+    Three:
+        mov ax, (1193180 / 300)
+        jmp SoundF
+    Five:
+        mov ax, (1193180 / 500)
+        jmp SoundF
+    Seven:
+        mov ax, (1193180 / 700)        
+
+    SoundF:
+        out 42h, al
+        mov al, ah
+        out 42h, al
+        in al, 61h
+        or al, 00000011b
+        out 61h, al
+        ; Delay time
+        ; STOP
+        in al, 61h
+        and al, 11111100b
+        out 61h, al
+    Pop ax
 endm
 
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 ;\\\\\\\\\\\\\\\ SORTING METHODS \\\\\\\\\\\\\\\\\\\\\
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-; -------------------- BUBBLE SORT -------------------- ;
-    BubbleSort macro array, ascOdec
-        local JUMP3, JUMP2, JUMP1, Ascendent, Descendent
-        push di
-        ; GET THE SIZE OF NON ZERO ATRIBUTES OF THE ARRAY AND MOVE IT TO THE BX REGISTRY
-        xor di, di
-        JUMP3:
-            mov si, di
-            inc si
-        JUMP2:
-            mov al, array[di]
-            mov ah, array[si]
-            mov bl, ascOdec
-            cmp bl, 01h
-                je Ascendent
-            Descendent:
-                cmp al, ah
-                    jge JUMP1
-                mov array[di], ah
-                mov array[si], al
-                jmp JUMP1
-            Ascendent:
-                cmp al, ah
-                    jle JUMP1
-                mov array[di], ah
-                mov array[si], al
-        JUMP1:
-            inc si
-            cmp si, SIZEOF array
-                jnz JUMP2
-            inc di
-            mov cx, SIZEOF array
-            dec cx
-            cmp di, cx
-                jnz JUMP3
-        pop di
-    endm
-
-; -------------------- QUICK SORT -------------------- ;
-    QuickSort macro array
-        local ENDGC
-        
-        mov al, lowP
-        mov ah, highP
-        cmp al, ah
-            jle ENDGC
-        
-        Partition array, lowP, highP
-
-        mov bl, lowP
-
-        dec ax
-        
-        inc ax
-        inc ax
-        mov bl, highP
-        
-
-        ENDGC:
-    endm
-
-    ; MOVE TO AX THE VALUE OF PARTITION
-    Partition macro array, lowP, highP
+    ; -------------------- BUBBLE SORT -------------------- ;
+        BubbleSort macro array, ascOdec
+            local JUMP3, JUMP2, JUMP1, Ascendent, Descendent
+            push di
+            ; GET THE SIZE OF NON ZERO ATRIBUTES OF THE ARRAY AND MOVE IT TO THE BX REGISTRY
+            xor di, di
+            JUMP3:
+                mov si, di
+                inc si
+            JUMP2:
+                mov al, array[di]
+                mov ah, array[si]
+                mov bl, ascOdec
+                cmp bl, 01h
+                    je Ascendent
+                Descendent:
+                    cmp al, ah
+                        jge JUMP1
+                    Sound al
+                    mov array[di], ah
+                    mov array[si], al
+                    jmp JUMP1
+                Ascendent:
+                    cmp al, ah
+                        jle JUMP1
+                    Sound al
+                    mov array[di], ah
+                    mov array[si], al
+            JUMP1:
+                inc si
+                cmp si, SIZEOF array
+                    jnz JUMP2
+                inc di
+                mov cx, SIZEOF array
+                dec cx
+                cmp di, cx
+                    jnz JUMP3
+            pop di
+        endm
 
 
+    ; -------------------- SHELL SORT -------------------- ;
+        ShellSort macro array
+            
+        endm
 
-    endm
+;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+;\\\\\\\\\\\\\\\\     ARRAY     \\\\\\\\\\\\\\\\\\\\\\
+;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-; -------------------- SHELL SORT -------------------- ;
-    ShellSort macro array
+    PushIntoArray macro array
         
     endm
 
@@ -267,20 +276,140 @@ endm
 
 ReadUsers macro file, route, handlerP
     Clean file, SIZEOF file, '$'
+    
     OpenFile route, handlerP
+    
     ReadFile handlerP, file, SIZEOF file
+    
     CloseFile handlerP
 endm
 
+; Move to al 01h if the user exist. Move to al 00h if the user doesnt exist
 CheckExistingUser macro user
+    local EndGC, ReadLoop, Names, Pass, Points, Times, EndLoop, ChangeToUser, ChangeToTimes, ChangeToPoints, ChangeToPass
+    xor ax, ax
+
+    ; To move through the file
+    xor si, si
+    xor di, di
+
+    Clean auxiliarUser, SIZEOF auxiliarUser,'$'
+
+    mov cx, SIZEOF file
+    mov bx, 01h
+    ReadLoop:
+        xor ax, ax
+        push cx
+        mov al, file[si]
+        inc si
+
+        cmp bx, 01h
+            je Names
+        cmp bx, 02h
+            je Pass
+        cmp bx, 03h
+            je Points
+        cmp bx, 04h
+            je Times
+        jmp EndGC
+
+        Names:
+            cmp al, ','
+                je ChangeToPass
+            ; User name
+            mov auxiliarUser[di], al
+            inc di
+            jmp EndLoop
+            ChangeToPass:
+                xor di, di
+                mov bx, 02h
+                ; Compare Users
+                CompareString auxiliarUser, actualUser
+
+                cmp al, 01h
+                    je EndGC
+
+                jmp EndLoop
+        Pass:
+            cmp al, ','
+                je ChangeToPoints
+            ; Pass
+            ChangeToPoints:
+                mov bx, 03h
+                jmp EndLoop
+        Points:
+            cmp al, ','
+                je ChangeToTimes
+            ; Points
+            ChangeToTimes:
+                mov bx, 04h
+                jmp EndLoop
+        Times:
+            cmp al, '#'
+                je EndGC
+            cmp al, 59
+                je ChangeToUser
+            ; Times
+            ChangeToUser:
+                mov bx, 01h
+        EndLoop:
+            Pop cx
+    dec cx
+        jne ReadLoop
+    EndGC:
+endm
+
+CheckPassOfUser macro user, pass
 
 endm
 
-CheckPass macro pass
+; Check if the pass only have numbers
+CheckPassR macro pass
+    local RepeatLoop, EndGC
 
+    xor di, di
+    mov cx, 04h
+    RepeatLoop:
+        mov al, pass[di]
+        inc di
+        cmp al, 48
+            jl JErrorInvalidPass
+        cmp al, 57
+            jg JErrorInvalidPass
+    Loop RepeatLoop
+    EndGC:
+        mov al, pass[di]
+        cmp al, '$'
+            jne JErrorInvalidPass        
 endm
+
 
 LoginM macro user, pass
+
+endm
+
+AdminLogin macro user, pass
+    local EndGC
+
+    CompareString user, adminUs
+
+    cmp al, 01h
+        jne EndGC
+    
+    CompareString pass, adminPass
+
+    cmp al, 01h
+        jne EndGC
+    
+    ; EnterAdmin
+
+    jmp AdminMenu
+
+    EndGC:
+
+endm
+
+EnterUserAndPass macro user, pass
 
 endm
 
@@ -288,24 +417,99 @@ endm
 ;\\\\\\\\\\\\\\\\    TESTING    \\\\\\\\\\\\\\\\\\\\\\
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-ReadFileOfUsers macro file
-    local ENDGC, ReadLoop, User, Pass, maxPoints, minTime
+    ReadFileOfUsers macro file
+        local ENDGC, ReadLoop, Names, Pass, Points, Times, EndLoop
+        local ChangeToPass, ChangeToPoints, ChangeToTimes, ChangeToUser
 
-    ; For the file.
-    ; ',' for the separation of information
-    ; 13, 10 for the separation of users
-    ; user,pass,maxPoints,minTime
-    ; '#' for the end of file
-    xor di, di
-    
-    mov cx, SIZEOF file
-    ReadLoop:
-    
-    Loop ReadLoop
+        ; For the file.
+        ; ',' for the separation of information
+        ; 13, 10 for the separation of users
+        ; user,pass,maxPoints,minTime
+        ; '#' for the end of file
+        xor di, di
+        xor si, si
+        
+        mov cx, SIZEOF file
+        mov bx, 01h
+        ReadLoop:
+            xor ax, ax
+            Push cx
+            mov al, file[si]
+            inc si
+            cmp bx, 01h
+                je Names
+            cmp bx, 02h
+                je Pass
+            cmp bx, 03h
+                je Points
+            cmp bx, 04h
+                je Times
+            jmp ENDGC
 
-    ENDGC:
-endm
+            Names:            
+                cmp al, ','
+                    je ChangeToPass
+                ; User name
+                mov auxiliarUser[di], al
+                inc di
+                jmp EndLoop
+                ChangeToPass:
+                    xor di, di
+                    ;print auxiliarUser
+                    ;getChar
+                    mov bx, 02h
+                    jmp EndLoop
+            Pass:
+                cmp al, ','
+                    je ChangeToPoints
+                ; Pass name
+                mov auxiliarPass[di], al
+                inc di
+                jmp EndLoop
+                ChangeToPoints:
+                    xor di, di
+                    ;print auxiliarPass
+                    ;getChar
+                    mov bx, 03h
+                    jmp EndLoop
+            Points:
+                cmp al, ','
+                    je ChangeToTimes
+                ; Points
+                mov auxiliarPoint[di], al
+                inc di
+                jmp EndLoop
+                ChangeToTimes:                
+                    ;print auxiliarPoint
+                    ;getChar
+                    ConvertToNumber auxiliarPoint
+                    ;TestingAX
+                    xor di, di                
+                    mov bx, 04h
+                    jmp EndLoop
+            Times:
+                cmp al, '#'
+                    je ENDGC
+                cmp al, 59
+                    je ChangeToUser
+                ; Times
+                mov auxiliarTimes[di], al
+                inc di
+                jmp EndLoop
+                ChangeToUser:
+                    xor di, di
+                    ;print auxiliarTimes
+                    ;getChar                    
+                    mov bx, 01h
+        
+            EndLoop:
+                Pop cx
+        dec cx
+            jne ReadLoop
 
+        ENDGC:
+            ; print auxiliarTimes
+    endm
 
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 ;\\\\\\\\\\\\\\\\     FILES     \\\\\\\\\\\\\\\\\\\\\\
@@ -342,8 +546,11 @@ endm
     ; OPEN FILE
     OpenFile macro route, handler
         Pushear
+        xor ax, ax
+        xor dx, dx
+
         mov ah, 3dh
-        mov al, 020h
+        mov al, 010b
         lea dx, route
         int 21h
         mov handler, ax
@@ -354,22 +561,35 @@ endm
 
     ; CLOSE FILE
     CloseFile macro handler
+        Pushear
+
+        xor ax, ax
+        xor bx, bx
+
         mov ah, 3eh
         mov bx, handler
         int 21h
         ; JUMP IF THE FILE DOESNT CLOSE FINE
         jc CloseError
+        Popear
     endm
 
     ; CREATE FILE
     CreateFile macro string, handler
+        Pushear
+
+        xor ax, ax
+        xor cx, cx
+        xor dx
+
         mov ah, 3ch
         mov cx, 00h
         lea dx, string
         int 21h
         mov handler, ax
         ; JUMP IF AN ERROR OCCURS WHILE CREATING THE FILE
-        jc CreateError    
+        jc CreateError
+        Popear
     endm
 
     ; WRITE ON FILE
@@ -379,6 +599,11 @@ endm
         PUSH cx
         PUSh dx
         
+        xor ax, ax
+        xor bx, bx
+        xor cx, cx
+        xor dx, dx
+
         mov ah, 40h
         mov bx, handler
         mov cx, numBytes
@@ -395,12 +620,22 @@ endm
 
     ; READ FILE
     ReadFile macro handler, info, numBytes    
+
+        Pushear
+
+        xor ax, ax
+        xor bx, bx
+        xor cx, cx
+        xor dx, dx
+
         mov ah, 3fh
         mov bx, handler
         mov cx, numBytes
         lea dx, info
         int 21h    
         jc ReadError
+
+        Popear
     endm
 
 

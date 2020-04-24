@@ -8,14 +8,19 @@ include macros.asm
 ; DATA SEGMENT
 .data
 
+    ; TESTING
+        testing db 'TEST', '$'
+    ; END TESTING
+
     ; SPECIAL CHARACTERS
         newLine db 13, 10, '$'
         cleanChar db '             ', '$'
         tab db 9, '$'
+        endPrint db '$'
     ; END SPECIAL CHARACTERS
 
     ; PRINCIPAL MENU
-        msgPrincipal db 13, 10, 9, '-!-!-!_MENU PRINCIPAL_!-!-!-', 13, 10, 9, 9,  '1.) Ingresar', 13, 10, 9, 9,  '2.) Registrar', 13, 10, 9, 9,  '3.) Salir', 13, 10, '$'
+        msgPrincipal db 13, 10, 9, '-!-!-!-!-!-!-!-!-!_MENU PRINCIPAL_!-!-!-!-!-!-!-!-!-', 13, 10, 9, 9, '1.) Ingresar', 13, 10, 9, 9,  '2.) Registrar', 13, 10, 9, 9,  '3.) Salir', 13, 10, '$'
     ; LOGIN AND REGISTRY
         msgLoginUser db 'Ingrese Usuario: ', '$'
         msgLoginPass db 'Ingrese Contrasenia: ', '$'
@@ -30,25 +35,42 @@ include macros.asm
 
     ; USERS
         file db 1500 dup('$')
-        route db 'users.us'
+        route db 'users.us', 00h
         handlerUsers dw ?
 
-    ; ADMIN VARIABLES
-        points db 1000 dup('$')
-        times db 1000 dup('$')
+    ; ADMIN VARIABLES8
+        adminUs db 'admin'
+        adminPass db '1234'
+        points dw 25 dup(0)
+        times dW 25 dup(0)
         ascOdesOPT db 00h
+        time db 00h
+
+        ; COLORS
+            red db 04h
+            blue db 01h
+            yellow db 0eh
+            green db 02h
+            white db 0Fh
 
     ; GAME VARIABLES
         actualUser db 20 dup('$')
+        actualPass db 20 dup('$')
         actualLevel db 20 dup('$')
         ; pointsNumber 
         pointsLabel db 5 dup('$')
         ; timeNumber
         timeLabel db '00:00:00', '$'
 
+    ; VARIABLES
+        auxiliarUser db 'FFFFFFF', '$'
+        auxiliarPass db '0000', '$$'
+        auxiliarPoint db '00', '$'
+        auxiliarTimes db '00', '$'
+
     ; ERRORS
         errorExistingUser db 'El usuario ingresado ya existe. Escribe otro usuario', '$'
-        errorInvalidPass db 'Contraseña incorrecta, debe de solo contener digitos', '$'
+        errorInvalidPass db 'Contrasenia incorrecta, debe de solo contener digitos y debe de tamanio 4', '$'
         msgErrorWrite db 'Error al escribir en el archivo', '$'
         msgErrorOpen db 'Error al abrir el archivo. Puede que no exista o la extension este mala', '$'
         msgErrorCreate db 'Error al crear el archivo', '$'
@@ -63,12 +85,13 @@ main proc
     mov ax, @data
     mov ds, ax
 
-    Start:
+    Start:        
         ClearConsole
         ; MENU
         print msgPrincipal
         getChar
         
+        ClearConsole
         cmp al, 31h
             je Login
         cmp al, 32h
@@ -76,28 +99,72 @@ main proc
         cmp al, 33h
             je Exit
         jmp Start
-    Registry:
+    Registry:        
         ReadUsers file, route, handlerUsers
-        ClearConsole
+        ReadFileOfUsers file
 
+        EnterUser:
+            Clean actualUser, SIZEOF actualUser, '$'
+
+            print msgLoginUser        
+            getText actualUser
+
+            xor ax, ax
+
+            CheckExistingUser actualUser            
+
+            cmp al, 01h
+                je JErrorExistingUser
+
+        EnterPass:
+
+            Clean actualPass, SIZEOF actualPass, '$'
+
+            print msgLoginPass
+            getText actualPass
+
+            CheckPassR actualPass
+        
+        EnterUserAndPass actualUser, actualPass, file
+
+        jmp Start
+    Login:        
+        ReadUsers file, route, handlerUsers
+        ReadFileOfUsers file
         print msgLoginUser
-        getText auxUser
+        getText actualUser
 
-        CheckExistingUser auxUser
+        CheckExistingUser actualUser
 
         print msgLoginPass
-        getText auxPass
+        getText actualPass
 
-        CheckPass auxPass
-        
-        jmp Start
-    Login:
-        ReadUsers file, route, handlerUsers
+        AdminLogin actualUser, actualPass
 
+        CheckPassOfUser actualUser, actualPass
     UserMenu:
 
     AdminMenu:
+        ClearConsole
 
+        print msgHeaderAdmin
+
+        getChar
+
+        cmp al, 31h
+            je Top10Points
+        cmp al, 32h
+            je Top10Times
+        cmp al, 33h
+            je Start
+        
+        jmp AdminMenu
+
+        Top10Points:
+
+        Top10Times:
+
+        jmp AdminMenu
     Exit:
         mov ah, 4ch     ; END PROGRAM
         xor al, al
@@ -124,9 +191,34 @@ main proc
             getChar
             jmp Start
         JErrorExistingUser:
-            
+            print errorExistingUser
+            getChar            
+            ClearConsole
+            jmp EnterUser
         JErrorInvalidPass:
-
+            print errorInvalidPass
+            getChar
+            moveCursor 00h, 00h
+            print cleanChar
+            print cleanChar
+            print cleanChar
+            print cleanChar
+            moveCursor 01h, 00h
+            print cleanChar
+            print cleanChar
+            print cleanChar
+            print cleanChar
+            moveCursor 02h, 00h
+            print cleanChar
+            print cleanChar
+            print cleanChar
+            print cleanChar
+            print cleanChar
+            print cleanChar
+            print cleanChar
+            print cleanChar
+            ClearConsole
+            jmp Registry
 main endp
 
 end

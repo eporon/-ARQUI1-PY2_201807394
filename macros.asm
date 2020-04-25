@@ -287,7 +287,6 @@ endm
 ; Move to al 01h if the user exist. Move to al 00h if the user doesnt exist
 CheckExistingUser macro user
     local EndGC, ReadLoop, Names, Pass, Points, Times, EndLoop, ChangeToUser, ChangeToTimes, ChangeToPoints, ChangeToPass
-    xor ax, ax
 
     ; To move through the file
     xor si, si
@@ -299,7 +298,7 @@ CheckExistingUser macro user
     mov bx, 01h
     ReadLoop:
         xor ax, ax
-        push cx
+        Push cx
         mov al, file[si]
         inc si
 
@@ -322,25 +321,124 @@ CheckExistingUser macro user
             jmp EndLoop
             ChangeToPass:
                 xor di, di
-                mov bx, 02h
                 ; Compare Users
                 CompareString auxiliarUser, actualUser
 
                 cmp al, 01h
                     je EndGC
 
+                Clean auxiliarUser, SIZEOF auxiliarUser,'$'
+
+                mov bx, 02h
                 jmp EndLoop
         Pass:
             cmp al, ','
                 je ChangeToPoints
             ; Pass
+            jmp EndLoop
             ChangeToPoints:
+                xor di, di
                 mov bx, 03h
                 jmp EndLoop
         Points:
             cmp al, ','
                 je ChangeToTimes
             ; Points
+            jmp EndLoop
+            ChangeToTimes:
+                xor di, di
+                mov bx, 04h
+                jmp EndLoop
+        Times:
+            cmp al, '#'
+                je EndGC
+            cmp al, 59
+                je ChangeToUser
+            ; Times
+            jmp EndLoop
+            ChangeToUser:
+                xor di, di
+                mov bx, 01h
+        EndLoop:
+            Pop cx
+    dec cx
+        jne ReadLoop
+    EndGC:
+endm
+
+; Move to ah 01h if the login have sucess
+CheckPassOfUser macro user, pass
+    local EndGC, ReadLoop, Names, PassJ, Points, Times, EndLoop, ChangeToUser, ChangeToTimes, ChangeToPoints, ChangeToPass
+    xor ax, ax
+
+    ; To move through the file
+    xor si, si
+    xor di, di
+
+    Clean auxiliarUser, SIZEOF auxiliarUser,'$'
+
+    mov cx, SIZEOF file
+    mov bx, 01h
+    ReadLoop:
+        xor ax, ax
+        push cx
+        mov al, file[si]
+        inc si
+
+        cmp bx, 01h
+            je Names
+        cmp bx, 02h
+            je PassJ
+        cmp bx, 03h
+            je Points
+        cmp bx, 04h
+            je Times
+        jmp EndGC
+
+        Names:
+            cmp al, ','
+                je ChangeToPass
+            ; User name
+            mov auxiliarUser[di], al
+            inc di
+            jmp EndLoop
+            ChangeToPass:
+                xor di, di
+                mov bx, 02h
+                jmp EndLoop
+        PassJ:
+            cmp al, ','
+                je ChangeToPoints
+            ; Pass
+            mov auxiliarPass[di], al
+            inc di
+            jmp EndLoop
+            ChangeToPoints:
+                xor di, di
+                mov bx, 03h
+
+                xor ax, ax
+
+                CompareString auxiliarUser, user
+
+                cmp al, 01h
+                    jne EndLoop
+
+                xor ax, ax
+
+                CompareString auxiliarPass, pass                
+
+                cmp al, 01h
+                    jne JErrorNoLogin
+
+                mov ah, 01h
+                
+                jmp EndGC
+        Points:
+            cmp al, ','
+                je ChangeToTimes
+            ; Points
+            jmp EndLoop
             ChangeToTimes:
                 mov bx, 04h
                 jmp EndLoop
@@ -350,17 +448,16 @@ CheckExistingUser macro user
             cmp al, 59
                 je ChangeToUser
             ; Times
+            jmp EndLoop
             ChangeToUser:
+                Clean auxiliarUser, SIZEOF auxiliarUser, '$'
+                Clean auxiliarPass, SIZEOF auxiliarPass, '$'
                 mov bx, 01h
         EndLoop:
             Pop cx
     dec cx
         jne ReadLoop
     EndGC:
-endm
-
-CheckPassOfUser macro user, pass
-
 endm
 
 ; Check if the pass only have numbers
@@ -388,20 +485,23 @@ LoginM macro user, pass
 
 endm
 
+; DEBUG: No ingresa de manera correcta al menu de admin. Probar
 AdminLogin macro user, pass
     local EndGC
 
-    CompareString user, adminUs
+    xor ax, ax
+
+    CompareString adminUs, user    
 
     cmp al, 01h
         jne EndGC
     
-    CompareString pass, adminPass
+    xor ax, ax
+
+    CompareString adminPass, pass 
 
     cmp al, 01h
         jne EndGC
-    
-    ; EnterAdmin
 
     jmp AdminMenu
 
@@ -409,8 +509,73 @@ AdminLogin macro user, pass
 
 endm
 
+; TODO: Ingresar usuarios al archivo de usuarios y escribirlo dentro del archivo
 EnterUserAndPass macro user, pass
+    local RepeatLoop, EnterNewUser, EndGC, EnterUser, EnterPass
 
+
+    xor di, di
+    xor cx, cx
+
+    mov cx, SIZEOF file
+    RepeatLoop:
+        mov al, file[di]        
+        cmp al, '#'
+            je EnterNewUser
+        inc di
+    Loop RepeatLoop
+    
+    EnterNewUser:
+        mov file[di], 59
+        inc di
+        
+        EnterUser:
+            xor si, si
+            mov cx, SIZEOF user
+            RepeatUser:
+                mov al, user[si]
+                inc si
+                cmp al, '$'
+                    je EnterPass
+                mov file[di], al
+                inc di
+            Loop RepeatUser
+        EnterPass:
+            mov file[di], ','
+            inc di
+            xor si, si
+            mov cx, SIZEOF pass
+            RepeatPass:
+                mov al, pass[si]
+                inc si
+                cmp al, '$'
+                    je EnterPoint
+                mov file[di], al
+                inc di
+            Loop RepeatPass
+        EnterPoint:
+            mov file[di], ','
+            inc di
+            mov file[di], '0'
+            inc di
+            mov file[di], '0'
+            inc di
+        EnterTime:
+            mov file[di], ','
+            inc di
+            mov file[di], '0'
+            inc di
+            mov file[di], '0'
+            inc di            
+    EndGC:
+        mov file[di], '#'
+        ;print file
+        ;getChar
+        OpenFile route, handlerUsers
+        WriteOnFile handlerUsers, file, SIZEOF file
+        CloseFile handlerUsers
+        ReadUsers file, route, handlerUsers
+        ReadFileOfUsers file
 endm
 
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -457,6 +622,7 @@ endm
                     xor di, di
                     ;print auxiliarUser
                     ;getChar
+                    ;Clean auxiliarUser, SIZEOF auxiliarUser, '$'
                     mov bx, 02h
                     jmp EndLoop
             Pass:

@@ -39,8 +39,8 @@ include macros.asm
         handlerUsers dw ?
 
     ; ADMIN VARIABLES8
-        adminUs db 'admin'
-        adminPass db '1234'
+        adminUs db 'admin', '$'
+        adminPass db '1234', '$'
         points dw 25 dup(0)
         times dW 25 dup(0)
         ascOdesOPT db 00h
@@ -63,12 +63,13 @@ include macros.asm
         timeLabel db '00:00:00', '$'
 
     ; VARIABLES
-        auxiliarUser db 'FFFFFFF', '$'
+        auxiliarUser db '$$$$$$$$$$$$$'
         auxiliarPass db '0000', '$$'
         auxiliarPoint db '00', '$'
         auxiliarTimes db '00', '$'
 
     ; ERRORS
+        errorLogin db 'Usuario o contrasenia incorrecto', '$'
         errorExistingUser db 'El usuario ingresado ya existe. Escribe otro usuario', '$'
         errorInvalidPass db 'Contrasenia incorrecta, debe de solo contener digitos y debe de tamanio 4', '$'
         msgErrorWrite db 'Error al escribir en el archivo', '$'
@@ -99,7 +100,7 @@ main proc
         cmp al, 33h
             je Exit
         jmp Start
-    Registry:        
+    Registry:
         ReadUsers file, route, handlerUsers
         ReadFileOfUsers file
 
@@ -109,7 +110,7 @@ main proc
             print msgLoginUser        
             getText actualUser
 
-            xor ax, ax
+            xor ax, ax            
 
             CheckExistingUser actualUser            
 
@@ -125,16 +126,18 @@ main proc
 
             CheckPassR actualPass
         
-        EnterUserAndPass actualUser, actualPass, file
+        EnterUserAndPass actualUser, actualPass
 
         jmp Start
     Login:        
         ReadUsers file, route, handlerUsers
         ReadFileOfUsers file
+        
+        Clean actualUser, SIZEOF actualUser, '$'
+        Clean actualPass, SIZEOF actualPass, '$'
+        
         print msgLoginUser
         getText actualUser
-
-        CheckExistingUser actualUser
 
         print msgLoginPass
         getText actualPass
@@ -142,8 +145,31 @@ main proc
         AdminLogin actualUser, actualPass
 
         CheckPassOfUser actualUser, actualPass
-    UserMenu:
 
+        cmp ah, 01h
+            je UserMenu
+        jmp JErrorNoLogin
+    UserMenu:
+        ClearConsole
+
+        print msgHeaderUser
+
+        getChar
+
+        cmp al, 31h
+            je Play
+        cmp al, 32h
+            je ChargeGame
+        cmp al, 33h
+            je Start
+
+        jmp UserMenu
+
+        Play:
+
+        ChargeGame:
+
+        jmp UserMenu
     AdminMenu:
         ClearConsole
 
@@ -219,6 +245,11 @@ main proc
             print cleanChar
             ClearConsole
             jmp Registry
+        JErrorNoLogin:
+            print errorLogin
+            getChar
+            ClearConsole
+            jmp Login
 main endp
 
 end

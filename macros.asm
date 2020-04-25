@@ -132,6 +132,8 @@ endm
 ; TESTING THE VALUE THAT IS IN AX
 TestingAX macro
 
+    Push ax
+
     xor di, di
     mov testing[di], ah
     inc di
@@ -141,7 +143,7 @@ TestingAX macro
     Push ax
     getChar
     Pop ax
-
+    Pop ax
 endm
 
 ; DELAY
@@ -259,7 +261,12 @@ endm
 
     ; -------------------- SHELL SORT -------------------- ;
         ShellSort macro array
-            
+            ; TODO: Realizar esta parte del ShellSort. Comparar con el de Herberth y con codigo alto nivel. Y el de XMLSort
+        endm
+
+    ; -------------------- QUICK SORT -------------------- ;
+        QuickSort macro array
+            ; TODO: Realizar esta parte del QuickSort. Comparar con el de Herberth y con codigo alto nivel. Y el de XMLSort
         endm
 
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -485,31 +492,48 @@ LoginM macro user, pass
 
 endm
 
-; DEBUG: No ingresa de manera correcta al menu de admin. Probar
 AdminLogin macro user, pass
-    local EndGC
+    local EndGC, CheckPass
 
     xor ax, ax
 
-    CompareString adminUs, user    
+    CompareString adminUs, user
 
     cmp al, 01h
-        jne EndGC
+        je CheckPass
+    jmp EndGC
     
-    xor ax, ax
-
-    CompareString adminPass, pass 
-
-    cmp al, 01h
-        jne EndGC
-
-    jmp AdminMenu
+    CheckPass:
+        xor di, di
+        
+        mov al, pass[di]
+        cmp al, '1'
+            jne EndGC
+        inc di
+        
+        mov al, pass[di]
+        cmp al, '2'
+            jne EndGC
+        inc di
+        
+        mov al, pass[di]
+        cmp al, '3'
+            jne EndGC
+        inc di
+        
+        mov al, pass[di]
+        cmp al, '4'
+            jne EndGC
+        
+        xor ax, ax
+        mov al, 01h
+        
+        jmp AdminMenu
 
     EndGC:
 
 endm
 
-; TODO: Ingresar usuarios al archivo de usuarios y escribirlo dentro del archivo
 EnterUserAndPass macro user, pass
     local RepeatLoop, EnterNewUser, EndGC, EnterUser, EnterPass
 

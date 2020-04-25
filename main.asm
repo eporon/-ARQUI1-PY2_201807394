@@ -39,7 +39,7 @@ include macros.asm
         handlerUsers dw ?
 
     ; ADMIN VARIABLES8
-        adminUs db 'admin', '$'
+        adminUs db 'admin', '$$$$$$$$$$$$$$$'
         adminPass db '1234', '$'
         points dw 25 dup(0)
         times dW 25 dup(0)
@@ -54,6 +54,9 @@ include macros.asm
             white db 0Fh
 
     ; GAME VARIABLES
+        levelsRoute db 20 dup(00h)
+        levelsFile db 1500 dup('$')
+
         actualUser db 20 dup('$')
         actualPass db 20 dup('$')
         actualLevel db 20 dup('$')
@@ -107,10 +110,10 @@ main proc
         EnterUser:
             Clean actualUser, SIZEOF actualUser, '$'
 
-            print msgLoginUser        
+            print msgLoginUser
             getText actualUser
 
-            xor ax, ax            
+            xor ax, ax
 
             CheckExistingUser actualUser            
 

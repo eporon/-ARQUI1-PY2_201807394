@@ -608,7 +608,7 @@ endm
 
     ReadFileOfUsers macro file
         local ENDGC, ReadLoop, Names, Pass, Points, Times, EndLoop
-        local ChangeToPass, ChangeToPoints, ChangeToTimes, ChangeToUser
+        local ChangeToPass, ChangeToPoints, ChangeToTimes, ChangeToUser        
 
         ; For the file.
         ; ',' for the separation of information
@@ -617,6 +617,9 @@ endm
         ; '#' for the end of file
         xor di, di
         xor si, si
+
+        mov al, 00h
+        mov count[00h], al
         
         mov cx, SIZEOF file
         mov bx, 01h
@@ -635,7 +638,7 @@ endm
                 je Times
             jmp ENDGC
 
-            Names:            
+            Names:
                 cmp al, ','
                     je ChangeToPass
                 ; User name
@@ -643,10 +646,10 @@ endm
                 inc di
                 jmp EndLoop
                 ChangeToPass:
+                    mov al, count
+                    inc al
+                    mov count, al
                     xor di, di
-                    ;print auxiliarUser
-                    ;getChar
-                    ;Clean auxiliarUser, SIZEOF auxiliarUser, '$'
                     mov bx, 02h
                     jmp EndLoop
             Pass:
@@ -658,8 +661,6 @@ endm
                 jmp EndLoop
                 ChangeToPoints:
                     xor di, di
-                    ;print auxiliarPass
-                    ;getChar
                     mov bx, 03h
                     jmp EndLoop
             Points:
@@ -669,11 +670,10 @@ endm
                 mov auxiliarPoint[di], al
                 inc di
                 jmp EndLoop
-                ChangeToTimes:                
-                    ;print auxiliarPoint
-                    ;getChar
+                ChangeToTimes:
+
                     ConvertToNumber auxiliarPoint
-                    ;TestingAX
+                    
                     xor di, di                
                     mov bx, 04h
                     jmp EndLoop
@@ -688,9 +688,7 @@ endm
                 jmp EndLoop
                 ChangeToUser:
                     xor di, di
-                    ;print auxiliarTimes
-                    ;getChar                    
-                    mov bx, 01h
+                    mov bx, 01h                    
         
             EndLoop:
                 Pop cx
@@ -698,7 +696,7 @@ endm
             jne ReadLoop
 
         ENDGC:
-            ; print auxiliarTimes
+            
     endm
 
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\

@@ -45,6 +45,7 @@ include macros.asm
         times dW 25 dup(0)
         ascOdesOPT db 00h
         time db 00h
+        count db 00h
 
         ; COLORS
             red db 04h

@@ -32,27 +32,55 @@ include macros.asm
 
     ; ADMIN MENU
         msgHeaderAdmin db 13, 10, 9, 'UNIVERSIDAD DE SAN CARLOS DE GUATEMALA', 13, 10, 9, 'FACULTAD DE INGENIERIA', 13, 10, 9, 'CIENCIAS Y SISTEMAS', 13, 10, 9, 'ARQUITECTURA DE COMPUTADORES Y ENSAMBLADORES 1', 13, 10, 9, 'NOMBRE: ANGEL MANUEL MIRANDA ASTURIAS', 13, 10, 9, 'CARNET: 201807394', 13, 10, 9, 'SECCION: A', 13, 10, 13, 10, 9, 9, '1.) Top 10 puntos', 13, 10, 9, 9, '2.) Top 10 tiempo', 13, 10, 9, 9, '3.) Salir', 13, 10, '$'
-
+        msgSelectSort db 13, 10, 9, 'Escoga que ordenamiento realizar: ', 13, 10, 9, 9, '1) BubblueSort', 13, 10, 9, 9, '2) QuickSort', 13, 10, 9, 9, '3) ShellSort', '$'
     ; USERS
-        file db 1500 dup('$')
+        file db 1500 dup(32)
         route db 'users.us', 00h
         handlerUsers dw ?
 
     ; ADMIN VARIABLES8
         adminUs db 'admin', '$$$$$$$$$$$$$$$'
         adminPass db '1234', '$'
-        points dw 25 dup(0)
-        times dW 25 dup(0)
+
+        indexPoints dw 00h
+        pointsO dw 1000 dup('$')
+        pointsF dw 20 dup(0)
+
+        indexTimes dw 00h
+        timesO dw 20 dup(0)
+        timesF dw 20 dup(0)
+
         ascOdesOPT db 00h
-        time db 00h
+        velocity db 00h        
         count db 00h
 
+        ; SORTS
+            strBubble db 'ORDENAMIENTO: BUBBLESORT'
+            strQuick db 'ORDENAMIENTO: QUICKSORT'
+            strShell db 'ORDENAMIENTO: SHELLSORT'
+
+            strTimes db 'TIEMPO: '
+            strSeconds db '00:00'
+
+            strVelocity db 'VELOCIDAD: '
+
+
         ; COLORS
-            red db 04h
-            blue db 01h
-            yellow db 0eh
-            green db 02h
-            white db 0Fh
+            RED db 04h
+            BLUE db 01h
+            YELLOW db 0eh
+            GREEN db 02h
+            WHITE db 0Fh
+        ; TYPE OF ORDER             00 -> Bubblue. 01 -> Quick. 02 -> Shell
+            ORDERTYPE db 00h
+        ; REPORT OF TOPs
+            pointsReportRoute db 'puntos.rep', 00h
+            pointsReport db 10000 dup(32)
+            pointsHandler dw ?
+
+            timesReportRoute db 'tiempos.rep', 00h
+            timesReport db 10000 dup(32)
+            timesHandler dw ?
 
     ; GAME VARIABLES
         levelsRoute db 20 dup(00h)
@@ -81,6 +109,7 @@ include macros.asm
         msgErrorCreate db 'Error al crear el archivo', '$'
         msgErrorClose db 'Error al cerrar el archivo', '$'
         msgErrorRead db 'Error al leer el archivo', '$'
+        msgErrorMaxUsers db 'Error, maximo numero de usuarios alcanzado', '$'
 
 ; CODE SEGMENT
 .code
@@ -191,9 +220,10 @@ main proc
         jmp AdminMenu
 
         Top10Points:
-
+            ;TOPPOINTSMACRO
+            jmp AdminMenu
         Top10Times:
-
+            ;TOPTIMESMACRO
         jmp AdminMenu
     Exit:
         mov ah, 4ch     ; END PROGRAM
@@ -254,6 +284,11 @@ main proc
             getChar
             ClearConsole
             jmp Login
+        JErrorMaxUsers:
+            print msgErrorMaxUsers
+            getChar
+            ClearConsole
+            jmp Start
 main endp
 
 end

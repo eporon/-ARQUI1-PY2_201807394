@@ -223,37 +223,45 @@ endm
             local JUMP3, JUMP2, JUMP1, Ascendent, Descendent
             push di
             ; GET THE SIZE OF NON ZERO ATRIBUTES OF THE ARRAY AND MOVE IT TO THE BX REGISTRY
-            xor di, di
+            xor di, di            
+            inc di
+            inc di
+            mov forV, 00h
             JUMP3:
                 mov si, di
                 inc si
+                inc si
             JUMP2:
-                mov al, array[di]
-                mov ah, array[si]
+                mov ax, array[di]   ; al
+                mov dx, array[si]   ; ah
                 mov bl, ascOdec
                 cmp bl, 01h
                     je Ascendent
                 Descendent:
-                    cmp al, ah
+                    cmp ax, dx
                         jge JUMP1
-                    Sound al
-                    mov array[di], ah
-                    mov array[si], al
+                    ;Sound ax
+                    mov array[di], dx
+                    mov array[si], ax
                     jmp JUMP1
                 Ascendent:
-                    cmp al, ah
+                    cmp ax, dx
                         jle JUMP1
-                    Sound al
-                    mov array[di], ah
-                    mov array[si], al
+                    ;Sound ax
+                    mov array[di], dx
+                    mov array[si], ax
             JUMP1:
+                inc si
                 inc si
                 cmp si, SIZEOF array
                     jnz JUMP2
                 inc di
-                mov cx, SIZEOF array
-                dec cx
-                cmp di, cx
+                inc di
+                inc forV
+                ;mov cx, SIZEOF array
+                ;dec cx
+                mov cx, forV
+                cmp cx, count
                     jnz JUMP3
             pop di
         endm
@@ -606,30 +614,338 @@ endm
 ;\\\\\\\\\\\\\\\\\    ADMIN    \\\\\\\\\\\\\\\\\\\\\\\
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-    TOPPOINTSMACRO macro        
+    TOPPOINTSMACRO macro 
+        local InitialGraph       
         ; MOSTRAR ARCHIVO DE TOPS
-        BubbleSort pointsF, 00h
-        CreateTopFile
-        ; MOSTRAR GRAFICA INICIAL
+            BubbleSort pointsO, 00h
+            mov ax, pointsO[02h]
+            mov MAXVALUE, ax
+            print MAXVALUE
+        ;CreateTopPointsFile
 
+        ; MOSTRAR GRAFICA INICIAL        
+            ReadFileOfUsers file
+            GraphOnScreen pointsO
         ; ESCUCHAR BARRA ESPACIADORA
-        
+        InitialGraph:
+            getChar
+            cmp al, 32
+                jne InitialGraph
+        TextMode
         ; MOSTRAR MENU DE ORDENAMIENTO
-        
+            SelectSortingMethod
         ; SELECCIONAR VELOCIDAD
-        
+            SelectVelocity
         ; SELECCIONAR ASCENDENTE O DESCENDENTE
-        
+            SelectAscOrDes
         ; ESCUCHAR BARRA ESPACIADORA
-        
+            ReadFileOfUsers file
+            GraphOnScreen pointsO
         ; INICIAR ORDENAMIENTO Y GRAFICADA
-        
+            
         ; ESCUCHAR BARRA PARA TERMINAR
+            getChar
+    endm
+
+    CreateTopPointsFile macro
 
     endm
 
     TOPTIMESMACRO macro
 
+    endm
+
+    SelectSortingMethod macro
+        local begin, EndGC, ChooseBubblue, ChooseQuick, ChooseShell
+        begin:
+            print msgSelectSort
+            getChar
+            cmp al, '1'
+                je ChooseBubblue
+            cmp al, '2'
+                je ChooseQuick
+            cmp al, '3'
+                je ChooseShell
+            jmp begin
+        ChooseBubblue:
+            mov ORDERTYPE, 00h
+            jmp EndGC
+        ChooseQuick:
+            mov ORDERTYPE, 01h
+            jmp EndGC
+        ChooseShell:
+            mov ORDERTYPE, 02h
+        EndGC:
+    endm
+
+    SelectVelocity macro
+        local begin, EndGC
+        begin:
+            print msgSelectVel
+            getChar
+            cmp al, '0'
+                jb begin
+            cmp al, '9'
+                ja begin
+            mov selectedVel[01h], al
+            sub al, 48
+            mov velocity, al
+        EndGC:
+    endm
+
+    SelectAscOrDes macro
+        local begin, EndGC
+        begin:
+            print msgSelectAoD
+            getChar
+            cmp al, '1'
+                je ASC
+            cmp al, '2'
+                je DES
+            jmp begin
+        ASC:
+            mov ascOdesOPT, 01h
+            jmp EndGC
+        DES:
+            mov ascOdesOPT, 00h
+        EndGC:
+    endm
+
+    GraphOnScreen macro array
+        ; MODO VIDEO
+            GraphicMode
+        ; ENCABEZADO
+            GraphHeader
+        ; DIBUJARARREGLO
+            GraphArray array            
+    endm
+
+    GraphArray macro array
+        local TEN, FIFTEEN, TWENTY, WhileDraw, Draw, TENWHILE, FIFTEENWHILE, TWENTYWHILE, MoveIndex
+
+        xor ax, ax
+        xor bx, bx
+        xor cx, cx
+        xor dx, dx
+        xor si, si
+
+        inc si
+        inc si
+
+        
+        mov cx, count
+
+        cmp count, 10
+            jbe TEN
+        cmp count, 15
+            jbe FIFTEEN
+        cmp count, 20
+            jbe TWENTY
+        TEN:
+            ; For the number
+            mov bl, 10
+            ; For the bar
+            mov dx, 67
+            jmp WhileDraw
+        FIFTEEN:
+            ; For the number
+            mov bl, 5
+            ; For the bar
+            mov dx, 30
+            jmp WhileDraw
+        TWENTY:
+            ; For the number
+            mov bl, 10
+            ; For the bar
+            mov dx, 77
+        
+        WhileDraw:
+                        
+            Push cx
+            mov ax, array[si]                                  
+            cmp ax, 00h
+                ja Draw
+            jmp MoveIndex
+
+            Draw:
+                Push ax
+                ConvertToString number
+                GraphString number, bl, 21, WHITE
+                Pop ax
+                ; GET COLOR BY VALUE
+                GetColor ax
+                ; GET THE VALUE OF THE HEIGHT
+                mov ax, array[si]
+                Push bx
+                mov bl, 02h
+                mul bl
+                
+                cmp count, 10
+                    jbe TENWHILE
+                cmp count, 15
+                    jbe FIFTEENWHILE
+                cmp count, 20
+                    jbe TWENTYWHILE
+                
+                TENWHILE:
+                    ; DRAW BAR
+                    GraphBar dx, 330, 40, ax, SELECTEDCOLOR
+                    add dx, 48
+                    Pop bx
+                    add bl, 6
+                    jmp MoveIndex
+                FIFTEENWHILE:
+                    ; DRAW BAR
+                    GraphBar dx, 330, 33, ax, SELECTEDCOLOR
+                    add dx, 40
+                    Pop bx
+                    add bl, 5
+                    jmp MoveIndex
+                TWENTYWHILE:
+                    ; DRAW BAR
+                    GraphBar dx, 330, 20, ax, SELECTEDCOLOR                    
+                    add dx, 24
+                    Pop bx
+                    add bl, 3
+                    jmp MoveIndex
+            MoveIndex:
+                inc si
+                inc si
+                Pop cx
+                dec cx
+                cmp cx, 00h
+                    jne WhileDraw
+    endm
+
+    GetColor macro value
+        local COLORRED, COLORBLUE, COLORYELLOW, COLORGREEN, COLORWHITE, EndGC
+        
+        cmp value, 20
+            jbe COLORRED
+        cmp value, 40
+            jbe COLORBLUE
+        cmp value, 60
+            jbe COLORYELLOW
+        cmp value, 80
+            jbe COLORGREEN
+        cmp value, 99
+            jbe COLORWHITE
+
+        COLORRED:
+            xor ax, ax
+            mov al, RED
+            mov SELECTEDCOLOR, al
+            jmp EndGC
+        COLORBLUE:
+            xor ax, ax
+            mov al, BLUE
+            mov SELECTEDCOLOR, al
+            jmp EndGC
+        COLORYELLOW:
+            xor ax, ax
+            mov al, YELLOW
+            mov SELECTEDCOLOR, al
+            jmp EndGC
+        COLORGREEN:
+            xor ax, ax
+            mov al, GREEN
+            mov SELECTEDCOLOR, al
+            jmp EndGC
+        COLORWHITE:
+            xor ax, ax
+            mov al, WHITE
+            mov SELECTEDCOLOR, al
+        EndGC:
+    endm
+
+    GraphNumber macro value, x, y, COLOR
+
+    endm
+
+                ; dx int int ax  SELECTEDCOLOR
+    GraphBar macro x, y, Wi, He, COLOR
+        local WhileHeight, WhileWidth
+        mov HEIGHTVALUE, ax
+
+        mov cx, ax
+        mov xPos2, x
+        mov yPos2, y
+        WhileHeight:
+            Push cx
+            mov WIDTHVALUE, Wi
+            mov cx, WIDTHVALUE
+            WhileWidth:
+                Push cx
+                ;x - y - color
+                printPixel xPos2, yPos2, COLOR
+                inc xPos2
+                Pop cx
+            Loop WhileWidth
+            Pop cx
+            dec yPos2
+
+            mov xPos2, x
+        Loop WhileHeight
+        ;getChar
+    endm
+
+    GraphHeader macro
+        LOCAL BubbleGraph, QuickGraph, ShellGraph, GraphTime, GraphVelocity
+        xor ax, ax
+
+        cmp ORDERTYPE, 00h
+            je BubbleGraph
+        cmp ORDERTYPE, 01h
+            je QuickGraph
+        cmp ORDERTYPE, 02h
+            je ShellGraph
+        BubbleGraph:
+            GraphString strBubble, 2, 1, WHITE
+            jmp GraphTime
+        QuickGraph:
+            GraphString strQuick, 2, 1, WHITE
+            jmp GraphTime
+        ShellGraph:
+            GraphString strShell, 2, 1, WHITE
+        
+        GraphTime:
+            GraphString strSeconds, 38, 1, WHITE
+
+        GraphVelocity:
+            GraphString strVelocity, 62, 1, WHITE
+            GraphString selectedVel, 74, 1, WHITE
+
+    endm
+
+    GraphString macro string, x, y, COLOR
+        local WhileDraw
+        Pushear
+
+        xor ax, ax
+        ;xor bx, bx
+        xor cx, cx
+        xor si, si
+
+        mov xPos, x
+
+        mov cx, SIZEOF string
+        moveCursor y, x
+
+        WhileDraw:
+            Push cx
+            mov ah, 09h
+            mov al, string[si]
+            mov bh, 00h
+            mov bl, COLOR
+            mov cx, 01h
+            int 10h
+            inc xPos
+            moveCursor y, xPos
+            inc si
+            Pop cx
+        Loop WhileDraw
+
+        Popear
     endm
 
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -652,8 +968,8 @@ endm
         cmp count, 20
             jge JErrorMaxUsers
 
-        mov al, 00h
-        mov count[00h], al
+        mov ax, 00h
+        mov count[00h], ax
         mov indexPoints, 00h
         
         mov cx, SIZEOF file
@@ -681,9 +997,9 @@ endm
                 inc di
                 jmp EndLoop
                 ChangeToPass:
-                    mov al, count
-                    inc al
-                    mov count, al
+                    mov ax, count
+                    inc ax
+                    mov count, ax
                     xor di, di
                     mov bx, 02h
                     jmp EndLoop
@@ -737,8 +1053,6 @@ endm
 
         ENDGC:
             dec count
-            print pointsO
-            getChar
     endm
 
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -923,7 +1237,7 @@ endm
 
     ConvertToString macro string
         local Divide, Divide2, EndCr3, Negative, End2, EndGC
-        Push si
+        Pushear
         xor si, si
         xor cx, cx
         xor bx, bx
@@ -957,7 +1271,7 @@ endm
         mov string[si], ah
         inc si
         EndGC:
-            Pop si
+            Popear
     endm
 
     ConvertToStringDH macro string, numberToConvert
@@ -1097,8 +1411,8 @@ endm
 
     GraphicMode macro
         ; BEGIN GRAPHIC MODE
-        mov ax, 0013h           ; RESOLUTION OF 200Hex320Wi
+        mov ah, 00h
+        mov al, 18
         int 10h
-        mov ax, 0A000h
-        mov ds, ax              ; DS = A000h (MEMORY OF GRAPHICS)
+        
     endm

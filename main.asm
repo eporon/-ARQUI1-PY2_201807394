@@ -10,6 +10,7 @@ include macros.asm
 
     ; TESTING
         testing db 'TEST', '$'
+        aber db 'Esta aqui', '$'
     ; END TESTING
 
     ; SPECIAL CHARACTERS
@@ -32,7 +33,9 @@ include macros.asm
 
     ; ADMIN MENU
         msgHeaderAdmin db 13, 10, 9, 'UNIVERSIDAD DE SAN CARLOS DE GUATEMALA', 13, 10, 9, 'FACULTAD DE INGENIERIA', 13, 10, 9, 'CIENCIAS Y SISTEMAS', 13, 10, 9, 'ARQUITECTURA DE COMPUTADORES Y ENSAMBLADORES 1', 13, 10, 9, 'NOMBRE: ANGEL MANUEL MIRANDA ASTURIAS', 13, 10, 9, 'CARNET: 201807394', 13, 10, 9, 'SECCION: A', 13, 10, 13, 10, 9, 9, '1.) Top 10 puntos', 13, 10, 9, 9, '2.) Top 10 tiempo', 13, 10, 9, 9, '3.) Salir', 13, 10, '$'
-        msgSelectSort db 13, 10, 9, 'Escoga que ordenamiento realizar: ', 13, 10, 9, 9, '1) BubblueSort', 13, 10, 9, 9, '2) QuickSort', 13, 10, 9, 9, '3) ShellSort', '$'
+        msgSelectSort db 13, 10, 9, 'Escoga que ordenamiento realizar: ', 13, 10, 9, 9, '1) BubblueSort', 13, 10, 9, 9, '2) QuickSort', 13, 10, 9, 9, '3) ShellSort',13, 10, '$'
+        msgSelectVel db 13, 10, 9, 'Escoga la velocidad de ordenamiento (0~9): ', '$'
+        msgSelectAoD db 13, 10, 9, 'Escoga el modo de ordenamiento: ', 13, 10, 9, 9, '1) Ascendente', 13, 10, 9, 9, '2) Descendente', 13, 10, '$'
     ; USERS
         file db 1500 dup(32)
         route db 'users.us', 00h
@@ -43,7 +46,7 @@ include macros.asm
         adminPass db '1234', '$'
 
         indexPoints dw 00h
-        pointsO dw 1000 dup('$')
+        pointsO dw 50 dup(0)
         pointsF dw 20 dup(0)
 
         indexTimes dw 00h
@@ -51,18 +54,19 @@ include macros.asm
         timesF dw 20 dup(0)
 
         ascOdesOPT db 00h
-        velocity db 00h        
-        count db 00h
+        velocity db 00h
+        count dw 00h
 
         ; SORTS
-            strBubble db 'ORDENAMIENTO: BUBBLESORT'
-            strQuick db 'ORDENAMIENTO: QUICKSORT'
-            strShell db 'ORDENAMIENTO: SHELLSORT'
+            strBubble db ' ORDENAMIENTO: BUBBLESORT'
+            strQuick db  ' ORDENAMIENTO: QUICKSORT'
+            strShell db  ' ORDENAMIENTO: SHELLSORT'
 
             strTimes db 'TIEMPO: '
-            strSeconds db '00:00'
+            strSeconds db ' 00:00'
 
-            strVelocity db 'VELOCIDAD: '
+            strVelocity db ' VELOCIDAD: '
+            selectedVel db ' ', 48
 
 
         ; COLORS
@@ -71,6 +75,7 @@ include macros.asm
             YELLOW db 0eh
             GREEN db 02h
             WHITE db 0Fh
+            SELECTEDCOLOR db 00h
         ; TYPE OF ORDER             00 -> Bubblue. 01 -> Quick. 02 -> Shell
             ORDERTYPE db 00h
         ; REPORT OF TOPs
@@ -81,6 +86,13 @@ include macros.asm
             timesReportRoute db 'tiempos.rep', 00h
             timesReport db 10000 dup(32)
             timesHandler dw ?
+            xPos db 00h
+            xPos2 dw 00h
+            yPos db 00h
+            yPos2 dw 00h
+
+            forV dw 00h
+            number db '00'
 
     ; GAME VARIABLES
         levelsRoute db 20 dup(00h)
@@ -99,6 +111,9 @@ include macros.asm
         auxiliarPass db '0000', '$$'
         auxiliarPoint db '00', '$'
         auxiliarTimes db '00', '$'
+        MAXVALUE dw 00h
+        WIDTHVALUE dw 00h
+        HEIGHTVALUE dw 00h
 
     ; ERRORS
         errorLogin db 'Usuario o contrasenia incorrecto', '$'
@@ -110,6 +125,7 @@ include macros.asm
         msgErrorClose db 'Error al cerrar el archivo', '$'
         msgErrorRead db 'Error al leer el archivo', '$'
         msgErrorMaxUsers db 'Error, maximo numero de usuarios alcanzado', '$'
+        msgErrorNoData db 'No hay informacion cargada en los tops', '$'
 
 ; CODE SEGMENT
 .code
@@ -220,10 +236,14 @@ main proc
         jmp AdminMenu
 
         Top10Points:
-            ;TOPPOINTSMACRO
+            cmp count, 0
+                je JErrorNoData
+            TOPPOINTSMACRO
             jmp AdminMenu
         Top10Times:
-            ;TOPTIMESMACRO
+            cmp count, 0
+                je JErrorNoData
+            TOPTIMESMACRO
         jmp AdminMenu
     Exit:
         mov ah, 4ch     ; END PROGRAM
@@ -286,6 +306,11 @@ main proc
             jmp Login
         JErrorMaxUsers:
             print msgErrorMaxUsers
+            getChar
+            ClearConsole
+            jmp Start
+        JErrorNoData:
+            print msgErrorNoData
             getChar
             ClearConsole
             jmp Start

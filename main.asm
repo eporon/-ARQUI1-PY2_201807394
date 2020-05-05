@@ -17,7 +17,7 @@ include macros.asm
         newLine db 13, 10, '$'
         cleanChar db '             ', '$'
         tab db 9, '$'
-        endPrint db '$'
+        
     ; END SPECIAL CHARACTERS
 
     ; PRINCIPAL MENU
@@ -46,7 +46,8 @@ include macros.asm
         adminPass db '1234', '$'
 
         indexPoints dw 00h
-        pointsO dw 50 dup(0)
+        pointsO dw 50 dup(00h)
+        endPrint db '$'
         pointsF dw 20 dup(0)
 
         indexTimes dw 00h
@@ -66,7 +67,7 @@ include macros.asm
             strSeconds db ' 00:00'
 
             strVelocity db ' VELOCIDAD: '
-            selectedVel db ' ', 48
+            selectedVel db 00H
 
 
         ; COLORS
@@ -92,6 +93,7 @@ include macros.asm
             yPos2 dw 00h
 
             forV dw 00h
+            forV2 dw 00h
             number db '00'
 
     ; GAME VARIABLES
@@ -114,6 +116,7 @@ include macros.asm
         MAXVALUE dw 00h
         WIDTHVALUE dw 00h
         HEIGHTVALUE dw 00h
+        time dw 05h
 
     ; ERRORS
         errorLogin db 'Usuario o contrasenia incorrecto', '$'

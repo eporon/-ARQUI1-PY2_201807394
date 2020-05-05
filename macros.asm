@@ -167,51 +167,67 @@ Delay macro number
         pop si
 endm
 
+MakeSound macro value
+    local Redj, Bluej, Yellowj, Greenj, WHitej, EndGC
+
+    cmp value, 20
+        jbe Redj
+    cmp value, 40
+        jbe Bluej
+    cmp value, 60
+        jbe Yellowj
+    cmp value, 80
+        jbe Greenj
+    cmp value, 99
+        jbe Whitej
+    
+    Redj:
+        Sound 100
+        jmp EndGC
+    Bluej:
+        Sound 300
+        jmp EndGC
+    Yellowj:
+        Sound 500
+        jmp EndGC
+    Greenj:
+        Sound 700
+        jmp EndGC
+    Whitej:
+        Sound 900
+    
+    EndGC:
+endm
+
 ; 1 - 20 : 100 | 21 - 40 : 300 | 41 - 60 : 500 | 61 - 80 : 700 | 81 - 99 : 900
 ; SOUND
 Sound macro hz
-    local One, Three, Five, Seven, SoundF
+    local SoundJMP, SoundOf, EndGC
 
     Push ax
+    Push cx
+
+    xor ax, ax
+    xor cx, cx
+    
     mov al, 86h
     out 43h, al
+    mov ax, (1193180 / hz)
+    out 42h, al
+    mov al, ah
+    out 42h, al 
+    in  al, 61h
+    or  al, 00000011b
+    out 61h, al
 
-
-    cmp hz, 20
-        jbe One
-    cmp hz, 40
-        jbe Three
-    cmp hz, 60
-        jbe Five
-    cmp hz, 80
-        jbe Seven
-    mov ax, (1193180 / 900)
-    jmp SoundF
-    One:
-        mov ax, (1193180 / 100)
-        jmp SoundF
-    Three:
-        mov ax, (1193180 / 300)
-        jmp SoundF
-    Five:
-        mov ax, (1193180 / 500)
-        jmp SoundF
-    Seven:
-        mov ax, (1193180 / 700)        
-
-    SoundF:
-        out 42h, al
-        mov al, ah
-        out 42h, al
-        in al, 61h
-        or al, 00000011b
-        out 61h, al
-        ; Delay time
-        ; STOP
-        in al, 61h
-        and al, 11111100b
-        out 61h, al
-    Pop ax
+    Delay time
+    
+    in al, 61h
+    and al, 11111100b
+    out 61h, al
+    EndGC:
+        Pop cx
+        Pop ax
 endm
 
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -219,7 +235,7 @@ endm
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
     ; -------------------- BUBBLE SORT -------------------- ;
-        BubbleSort macro array, ascOdec
+        BubbleSortNoGraph macro array, ascOdec
             local JUMP3, JUMP2, JUMP1, Ascendent, Descendent
             push di
             ; GET THE SIZE OF NON ZERO ATRIBUTES OF THE ARRAY AND MOVE IT TO THE BX REGISTRY
@@ -234,6 +250,8 @@ endm
             JUMP2:
                 mov ax, array[di]   ; al
                 mov dx, array[si]   ; ah
+                cmp dx, 00h
+                    je JUMP1
                 mov bl, ascOdec
                 cmp bl, 01h
                     je Ascendent
@@ -266,14 +284,72 @@ endm
             pop di
         endm
 
+        BubbleSort macro array, ascOdec
+            local JUMP3, JUMP2, JUMP1, Ascendent, Descendent
+            push di
+            ; GET THE SIZE OF NON ZERO ATRIBUTES OF THE ARRAY AND MOVE IT TO THE BX REGISTRY
+            xor di, di            
+            inc di
+            inc di
+            mov forV, 00h
+            JUMP3:
+                mov si, di
+                inc si
+                inc si
+            JUMP2:
+                mov ax, array[di]   ; al
+                mov dx, array[si]   ; ah
+                cmp dx, 00h
+                    je JUMP1
+                mov bl, ascOdec
+                cmp bl, 01h
+                    je Ascendent
+                Descendent:
+                    cmp ax, dx
+                        jge JUMP1
+                    mov array[di], dx
+                    mov array[si], ax
+                    Pushear
+                    GraphOnScreen array
+                    Popear
+                    Pushear
+                    MakeSound ax
+                    Popear
+                    jmp JUMP1
+                Ascendent:
+                    cmp ax, dx
+                        jle JUMP1
+                    mov array[di], dx
+                    mov array[si], ax
+                    Pushear
+                    GraphOnScreen array
+                    Popear
+                    Pushear
+                    MakeSound ax
+                    Popear
+            JUMP1:
+                inc si
+                inc si
+                cmp si, SIZEOF array
+                    jnz JUMP2
+                inc di
+                inc di
+                inc forV
+                ;mov cx, SIZEOF array
+                ;dec cx
+                mov cx, forV
+                cmp cx, count
+                    jnz JUMP3
+            pop di
+        endm
 
     ; -------------------- SHELL SORT -------------------- ;
-        ShellSort macro array
+        ShellSort macro array, ascOdec
             ; TODO: Realizar esta parte del ShellSort. Comparar con el de Herberth y con codigo alto nivel. Y el de XMLSort
         endm
 
     ; -------------------- QUICK SORT -------------------- ;
-        QuickSort macro array
+        QuickSort macro array, ascOdec
             ; TODO: Realizar esta parte del QuickSort. Comparar con el de Herberth y con codigo alto nivel. Y el de XMLSort
         endm
 
@@ -495,11 +571,6 @@ endm
                 jne JErrorInvalidPass        
     endm
 
-
-    LoginM macro user, pass
-
-    endm
-
     AdminLogin macro user, pass
         local EndGC, CheckPass
 
@@ -615,15 +686,14 @@ endm
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
     TOPPOINTSMACRO macro 
-        local InitialGraph       
+        local InitialGraph, ENDGC, SelectBubble, SelectQuick
         ; MOSTRAR ARCHIVO DE TOPS
-            BubbleSort pointsO, 00h
+            BubbleSortNoGraph pointsO, 00h            
             mov ax, pointsO[02h]
             mov MAXVALUE, ax
-            print MAXVALUE
         ;CreateTopPointsFile
 
-        ; MOSTRAR GRAFICA INICIAL        
+        ; MOSTRAR GRAFICA INICIAL                   
             ReadFileOfUsers file
             GraphOnScreen pointsO
         ; ESCUCHAR BARRA ESPACIADORA
@@ -642,9 +712,27 @@ endm
             ReadFileOfUsers file
             GraphOnScreen pointsO
         ; INICIAR ORDENAMIENTO Y GRAFICADA
-            
+            cmp ORDERTYPE, 00h
+                je SelectBubble
+            cmp ORDERTYPE, 01h
+                je SelectQuick
+            ShellSort pointsO, ascOdesOPT
+            jmp ENDGC
+            SelectBubble:
+                BubbleSort pointsO, ascOdesOPT
+                jmp ENDGC
+            SelectQuick:
+                QuickSort pointsO, ascOdesOPT
         ; ESCUCHAR BARRA PARA TERMINAR
+        ENDGC:
+            GraphOnScreen pointsO
             getChar
+            cmp al, ' '
+                je GoToMenu
+            jmp ENDGC
+        GoToMenu:
+            TextMode
+            jmp AdminMenu
     endm
 
     CreateTopPointsFile macro
@@ -679,7 +767,7 @@ endm
     endm
 
     SelectVelocity macro
-        local begin, EndGC
+        local begin, EndGC, ZeroVel, OneVel, TwoVel, ThreeVel, FourVel, FiveVel, SixVel, SevenVel, EightVel, NineVel
         begin:
             print msgSelectVel
             getChar
@@ -687,9 +775,60 @@ endm
                 jb begin
             cmp al, '9'
                 ja begin
-            mov selectedVel[01h], al
+            mov selectedVel, al
             sub al, 48
             mov velocity, al
+            cmp velocity, 00h
+                je ZeroVel
+            cmp velocity, 01h
+                je OneVel
+            cmp velocity, 02h
+                je TwoVel
+            cmp velocity, 03h
+                je ThreeVel
+            cmp velocity, 04h
+                je FourVel
+            cmp velocity, 05h
+                je FiveVel
+            cmp velocity, 06h
+                je SixVel
+            cmp velocity, 07h
+                je SevenVel
+            cmp velocity, 08h
+                je EightVel
+            cmp velocity, 09h
+                je NineVel
+
+            ZeroVel:
+                mov time, 100h
+                jmp EndGC
+            OneVel:
+                mov time, 100h
+                jmp EndGC
+            TwoVel:
+                mov time, 100h
+                jmp EndGC
+            ThreeVel:
+                mov time, 100h
+                jmp EndGC
+            FourVel:
+                mov time, 100h
+                jmp EndGC
+            FiveVel:
+                mov time, 100h
+                jmp EndGC
+            SixVel:
+                mov time, 100h
+                jmp EndGC
+            SevenVel:
+                mov time, 100h
+                jmp EndGC
+            EightVel:
+                mov time, 100h
+                jmp EndGC
+            NineVel:
+                mov time, 100h
+                jmp EndGC
         EndGC:
     endm
 
@@ -858,10 +997,6 @@ endm
         EndGC:
     endm
 
-    GraphNumber macro value, x, y, COLOR
-
-    endm
-
                 ; dx int int ax  SELECTEDCOLOR
     GraphBar macro x, y, Wi, He, COLOR
         local WhileHeight, WhileWidth
@@ -956,6 +1091,8 @@ endm
         local ENDGC, ReadLoop, Names, Pass, Points, Times, EndLoop
         local ChangeToPass, ChangeToPoints, ChangeToTimes, ChangeToUser        
         local AdminUserJMP
+
+        ;Clean pointsO, SIZEOF pointsO, 00h
 
         ; For the file.
         ; ',' for the separation of information

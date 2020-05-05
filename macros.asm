@@ -800,34 +800,34 @@ endm
                 je NineVel
 
             ZeroVel:
-                mov time, 100h
+                mov time, 1000
                 jmp EndGC
             OneVel:
-                mov time, 100h
+                mov time, 900
                 jmp EndGC
             TwoVel:
-                mov time, 100h
+                mov time, 800
                 jmp EndGC
             ThreeVel:
-                mov time, 100h
+                mov time, 700
                 jmp EndGC
             FourVel:
-                mov time, 100h
+                mov time, 600
                 jmp EndGC
             FiveVel:
-                mov time, 100h
+                mov time, 500
                 jmp EndGC
             SixVel:
-                mov time, 100h
+                mov time, 400
                 jmp EndGC
             SevenVel:
-                mov time, 100h
+                mov time, 300
                 jmp EndGC
             EightVel:
-                mov time, 100h
+                mov time, 200
                 jmp EndGC
             NineVel:
-                mov time, 100h
+                mov time, 100
                 jmp EndGC
         EndGC:
     endm

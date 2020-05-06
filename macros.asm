@@ -230,6 +230,23 @@ Sound macro hz
         Pop ax
 endm
 
+CopyNoDolar macro string1, string2
+    local RepeatThis, EndGC
+    Pushear
+    Clean string2, SIZEOF string2, 00h
+    xor si, si
+    xor ax, ax
+    RepeatThis:
+        mov al, string1[si]        
+        cmp al, '$'
+            je EndGC
+        mov string2[si], al
+        inc si
+    Loop RepeatThis
+    EndGC:
+    Popear
+endm
+
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 ;\\\\\\\\\\\\\\\ SORTING METHODS \\\\\\\\\\\\\\\\\\\\\
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -766,31 +783,38 @@ endm
     endm
 
     ReadFileOfLevels macro string
-        local EndGC, Case0
-        print string
-        getChar
+        local EndGC, EndGCF
+        ;print string
+        ;getChar
         mov countOfLevels, 00h
+        Clean colors, SIZEOF colors, 00h
+        Clean strlevel1, SIZEOF strlevel1, '$'
+        Clean strlevel2, SIZEOF strlevel2, '$'
+        Clean strlevel3, SIZEOF strlevel3, '$'
+        Clean strlevel4, SIZEOF strlevel4, '$'
+        Clean strlevel5, SIZEOF strlevel5, '$'
+        Clean strlevel6, SIZEOF strlevel6, '$'
         xor si, si
         xor di, di
         ; Cases
-            Case0:
+            Case0:                
                 ; ------N------
                 cmp string[si], 78
                     je Case1
                 jmp EndGC
-            Case1:
+            Case1:                
                 ; ------I------
                 inc si
                 cmp string[si], 73
                     je Case2
                 jmp JErrorOnFile
-            Case2:
+            Case2:                
                 ; ------V------
                 inc si
                 cmp string[si], 86
                     je Case3
                 jmp JErrorOnFile
-            Case3:
+            Case3:                
                 ; ------E------
                 inc si
                 cmp string[si], 69
@@ -804,6 +828,7 @@ endm
                 jmp JErrorOnFile
             Case5:
                 ; ------;------
+                xor di, di
                 inc si
                 cmp string[si], 59
                     je Case6
@@ -824,6 +849,9 @@ endm
                     je Level4
                 cmp countOfLevels, 04h
                     je Level5
+                cmp countOfLevels, 05h
+                    je Level6
+                jmp EndGC
                 ; Fill Levels
                     Level6:
                         mov strlevel6[di], al
@@ -849,35 +877,242 @@ endm
                         mov strlevel5[di], al
                         inc di
                     jmp Case6
-            Case7:
+            Case7:                
                 inc si
                 cmp string[si], 59
                     je Case8
                 jmp Case7
-            Case8:
+            Case8:                
                 inc si
                 cmp string[si], 59
                     je Case9
                 jmp Case8
-            Case9:
+            Case9:                
                 inc si
                 cmp string[si], 59
                     je Case10
                 jmp Case9
-            Case10:
+            Case10:                
                 inc si
                 cmp string[si], 59
                     je Case11
                 jmp Case10
             Case11:
+                xor di, di
+                Clean auxiliarColor, SIZEOF auxiliarColor, '$'
                 inc si
                 cmp string[si], 59
                     je Case12
                 jmp Case11
             ; COLOR
             Case12:
-                
+                inc si
+                mov al, string[si]                
+                cmp string[si], 13
+                    je Case13           ; Increase again to skip 10
+                cmp string[si], 10
+                    je Case13           ; Increase again to skip 13
+                cmp string[si], 00h
+                    je EndGC
+                mov al, string[si]                                
+                mov auxiliarColor[di], al
+                inc di
+                jmp Case12
+            Case13:
+                xor di, di
+                inc si
+                inc si                
+                CompareString strRed, auxiliarColor
+                cmp al, 01h
+                    je PUTRED
+                CompareString strBlue, auxiliarColor
+                cmp al, 01h
+                    je PUTBLUE
+                CompareString strGreen, auxiliarColor
+                cmp al, 01h
+                    je PUTGREEN
+                CompareString strWhite, auxiliarColor
+                cmp al, 01h
+                    je PUTWHITE
+                jmp JErrorOnFile
+                PUTRED:
+                    mov di, countOfLevels
+                    mov colors[di], 04h
+                    jmp Continue
+                PUTBLUE:
+                    mov di, countOfLevels
+                    mov colors[di], 01h
+                    jmp Continue
+                PUTGREEN:
+                    mov di, countOfLevels
+                    mov colors[di], 02h
+                    jmp Continue
+                PUTWHITE:
+                    mov di, countOfLevels
+                    mov colors[di], 0Fh
+                Continue:
+                inc countOfLevels
+                cmp string[si], '$'
+                    je EndGC
+                jmp Case0
         EndGC:
+            cmp countOfLevels, 06h
+                jge EndGCF         
+   
+            CompareString strRed, auxiliarColor
+            cmp al, 01h
+                je PUTRED2
+            CompareString strBlue, auxiliarColor
+            cmp al, 01h
+                je PUTBLUE2
+            CompareString strGreen, auxiliarColor
+            cmp al, 01h
+                je PUTGREEN2
+            CompareString strWhite, auxiliarColor
+            cmp al, 01h
+                je PUTWHITE2
+
+            PUTRED2:
+                mov di, countOfLevels
+                mov colors[di], 04h
+                jmp Continue2
+            
+            PUTBLUE2:
+                mov di, countOfLevels
+                mov colors[di], 01h
+                jmp Continue2
+            
+            PUTGREEN2:
+                mov di, countOfLevels
+                mov colors[di], 02h
+                jmp Continue2
+            
+            PUTWHITE2:
+                mov di, countOfLevels
+                mov colors[di], 0Fh
+            Continue2:
+                inc countOfLevels
+        EndGCF:
+            ;print countOfLevels
+            ;getChar
+            ;print colors
+            ;getChar
+    endm
+
+    PlayGame macro        
+        local RepeatThis, NextLevel, PauseG, EndGC
+        xor di, di
+        loop RepeatThis
+        RepeatThis:
+            
+            GraphicMode
+
+            GraphHeaderGame
+
+            GraphCar
+
+            getChar
+            cmp al, 27
+                je PauseG
+            cmp al, 32
+                je EndGC
+            cmp al, 'n'
+                je NextLevel
+            cmp al, 4dh
+                je MOVERIGHT
+            cmp al, 4bh
+                je MOVELEFT
+            jmp RepeatThis  
+        NextLevel:
+            inc di
+            cmp di, countOfLevels
+                je EndGC            
+            jmp RepeatThis
+        PauseG:
+            PauseGame
+            jmp RepeatThis
+        MOVERIGHT:
+            cmp xFinal, 490
+                jge RepeatThis
+            add xFinal, 5
+            jmp RepeatThis
+        MOVELEFT:
+            cmp xFinal, 75
+                jle RepeatThis
+            sub xFinal, 5
+            jmp RepeatThis
+        EndGC:
+            TextMode
+    endm
+
+    PauseGame macro        
+        local RepeatPause
+        RepeatPause:            
+            GraphString msgPause, 2, 1, WHITE
+            getChar
+            cmp al, 27
+                jne RepeatPause
+    endm
+
+    GraphHeaderGame macro
+        local LEVELONE, LEVELTWO, LEVELTHREE, LEVELFOUR, LEVELFIVE, LEVELSIX, PRINTLevel
+        xor ax, ax
+        CopyNoDolar actualUser, nameToShow
+        GraphString nameToShow, 2, 1, WHITE
+        
+        cmp di, 00h
+            je LEVELONE
+        cmp di, 01h
+            je LEVELTWO
+        cmp di, 02h
+            je LEVELTHREE
+        cmp di, 03h
+            je LEVELFOUR
+        cmp di, 04h
+            je LEVELFIVE
+        cmp di, 05h
+            je LEVELSIX
+        LEVELONE:
+            CopyNoDolar strlevel1, nameToShow
+            jmp PRINTLevel
+        LEVELTWO:
+            CopyNoDolar strlevel2, nameToShow
+            jmp PRINTLevel
+        LEVELTHREE:
+            CopyNoDolar strlevel3, nameToShow
+            jmp PRINTLevel
+        LEVELFOUR:
+            CopyNoDolar strlevel4, nameToShow
+            jmp PRINTLevel
+        LEVELFIVE:
+            CopyNoDolar strlevel5, nameToShow
+            jmp PRINTLevel
+        LEVELSIX:
+            CopyNoDolar strlevel6, nameToShow
+            jmp PRINTLevel
+        PRINTLevel:
+            GraphString nameToShow, 62, 1, WHITE
+    endm
+
+    GraphCar macro
+        local WIDTHCAR, HEIGHTCAR   
+        mov ax, xFinal     
+        mov xPos2, ax
+        mov yPos2, 400
+        mov cx, 3Fh
+        WIDTHCAR:
+            mov yPos2, 400
+            Push cx
+            mov cx, 3FH
+            HEIGHTCAR:
+                Push cx
+                printPixel xPos2, yPos2, colors[di]
+                inc yPos2
+                Pop cx
+            Loop HEIGHTCAR
+            inc xPos2
+            Pop cx            
+        Loop WIDTHCAR
     endm
 
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\

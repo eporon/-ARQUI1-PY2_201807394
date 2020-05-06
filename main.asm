@@ -47,8 +47,7 @@ include macros.asm
         adminPass db '1234', '$'
 
         indexPoints dw 00h
-        pointsO dw 50 dup(00h)
-        endPrint db '$'
+        pointsO dw 50 dup(00h)        
         pointsF dw 20 dup(0)
 
         indexTimes dw 00h
@@ -89,6 +88,7 @@ include macros.asm
             timesReportRoute db 'tiempos.rep', 00h
             xPos db 00h
             xPos2 dw 00h
+            xFinal dw 280
             yPos db 00h
             yPos2 dw 00h
 
@@ -99,12 +99,14 @@ include macros.asm
             MINORV dw 00h
             MAJORV dw 00h
             FLAGREPORT dw 00h
+            ACTUALCOLOR db 00h
 
     ; GAME VARIABLES
         levelsRoute db 20 dup(00h)
         levelsFile db 1500 dup('$')
 
         actualUser db 20 dup('$')
+        nameToShow db 20 dup(00h)
         actualPass db 20 dup('$')
         actualLevel db 20 dup('$')
         ; pointsNumber 
@@ -126,7 +128,7 @@ include macros.asm
         playFile db 1000 dup('$')
         playHandler dw ?
         routeLevel db 20 dup(00h)        
-        colors db 6 dup(00h)            ; Color of the vehicle
+        colors db 20 dup(00h)            ; Color of the vehicle
         strlevel1 db '$$$$$$$', '$'
         strlevel2 db '$$$$$$$', '$'
         strlevel3 db '$$$$$$$', '$'
@@ -134,6 +136,14 @@ include macros.asm
         strlevel5 db '$$$$$$$', '$'
         strlevel6 db '$$$$$$$', '$'
         countOfLevels dw 00h
+        endPrint db '$'
+        msgPause db 'PAUSA     '
+
+        auxiliarColor db '$$$$$$$$$$', '$'
+        strRed db 'rojo'
+        strBlue db 'azul'
+        strGreen db 'verde'
+        strWhite db 'blanco'
 
     ; ERRORS
         errorLogin db 'Usuario o contrasenia incorrecto', '$'
@@ -147,6 +157,7 @@ include macros.asm
         msgErrorMaxUsers db 'Error, maximo numero de usuarios alcanzado', '$'
         msgErrorNoData db 'No hay informacion cargada en los tops', '$'
         msgErrorFile db 'Error en el archivo de entrada', '$'
+        msgErrorNoGame db 'Error, no ha ingresado informacion para el juego', '$'
 
 ; CODE SEGMENT
 .code
@@ -236,7 +247,9 @@ main proc
         jmp UserMenu
 
         Play:
-
+            cmp colors[00h], 00h
+                je JErrorNoDataGame
+            PlayGame
             jmp UserMenu
         ChargeGame:
             print newLine
@@ -254,7 +267,7 @@ main proc
 
             CloseFile playHandler
             
-            ReadFileOfLevels playFile
+            ReadFileOfLevels playFile            
         jmp UserMenu
     AdminMenu:
         ClearConsole
@@ -353,6 +366,11 @@ main proc
             jmp Start
         JErrorOnFile:
             print msgErrorFile
+            getChar
+            ClearConsole
+            jmp UserMenu
+        JErrorNoDataGame:
+            print msgErrorNoGame
             getChar
             ClearConsole
             jmp UserMenu

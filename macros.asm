@@ -349,8 +349,92 @@ endm
         endm
 
     ; -------------------- QUICK SORT -------------------- ;
-        QuickSort macro array, ascOdec
+        QuickSort macro array, ascOdec, major, minor
             ; TODO: Realizar esta parte del QuickSort. Comparar con el de Herberth y con codigo alto nivel. Y el de XMLSort
+            local EndGC, Sort
+            print aber
+            getChar
+            Pushear
+            
+                xor ax, ax
+                xor bx, bx
+                xor cx, cx 
+                xor si, si
+                xor di, di
+
+                mov si, minor
+                mov MINORV, si
+                mov di, major
+                mov MAJORV, di
+
+                ; if LOW < HIGH Then Sort. Else End
+                cmp si, di
+                    jl Sort
+                jmp EndGC
+
+            Sort:
+
+                ; pivot = partition(array, ascOdec, low, high)
+                GetPartition array, ascOdec, minor, major
+                mov pivot, ax
+
+                dec pivot
+                Push pivot
+                Push MINORV
+                ;QuickSort array, ascOdec, pivot, MINORV
+                Pop MINORV
+                Pop pivot
+                add pivot, 2
+                ;QuickSort array, ascOdec, MAJORV, pivot                
+            EndGC:
+                Popear
+        endm
+
+        GetPartition macro array, ascOdec, minor, major
+            local ForR, Descendent, Ascendent, Swap, ContinueFor
+            mov ax, array[2 * major]
+            mov pivot, ax                   ;int pivot = arr[high];
+            mov di, minor                   ;int i = (low - 1);
+            dec di                          ;int i = (low - 1);
+            dec di
+        
+            mov si, minor                     ; j = low
+            ForR:
+                mov ax, array[si]           ; arr[j]
+
+                ; Compare ascendent or descendent                
+                mov bl, ascOdec
+                cmp bl, 01h
+                    je Ascendent                            
+
+                Descendent:
+                    cmp ax, pivot
+                        jg Swap
+                    jmp ContinueFor
+                Ascendent:
+                    cmp ax, pivot               ; arr[j] < pivot
+                        jl Swap
+                    jmp ContinueFor
+                Swap:
+                    inc di                  ; i++
+                    inc di
+                    mov bx, array[di]       ; arr[i]
+                    mov array[si], bx       ; arr[j] = arr[i] actual Value
+                    mov array[di], ax       ; arr[i] = arr[j] last Value
+                ContinueFor:
+                    inc si                      ; j++
+                    inc si
+                    cmp si, major               ; j <= high
+                        jle ForR
+            ;     swap(&arr[i + 1], &arr[high])
+            inc di                              ; i + 1
+            inc si
+            mov ax, array[di]                   ; arr[i+1]
+            mov bx, array[major]                ; arr[high]
+            mov array[di], bx                   ; arr[i+1] = arr[high] actualValue
+            mov array[major], ax                ; arr[high] = arr[i+1] lastValue
+
+            mov ax, di                          ; return i + 1
         endm
 
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -681,18 +765,137 @@ endm
             ReadFileOfUsers file
     endm
 
+    ReadFileOfLevels macro string
+        local EndGC, Case0
+        print string
+        getChar
+        mov countOfLevels, 00h
+        xor si, si
+        xor di, di
+        ; Cases
+            Case0:
+                ; ------N------
+                cmp string[si], 78
+                    je Case1
+                jmp EndGC
+            Case1:
+                ; ------I------
+                inc si
+                cmp string[si], 73
+                    je Case2
+                jmp JErrorOnFile
+            Case2:
+                ; ------V------
+                inc si
+                cmp string[si], 86
+                    je Case3
+                jmp JErrorOnFile
+            Case3:
+                ; ------E------
+                inc si
+                cmp string[si], 69
+                    je Case4
+                jmp JErrorOnFile
+            Case4:
+                ; ------L------
+                inc si
+                cmp string[si], 76
+                    je Case5
+                jmp JErrorOnFile
+            Case5:
+                ; ------;------
+                inc si
+                cmp string[si], 59
+                    je Case6
+                jmp JErrorOnFile
+            ; ------Name of Level------
+            Case6:                
+                inc si
+                mov al, string[si]
+                cmp al, 59
+                    je Case7    ; Change times
+                cmp countOfLevels, 00h
+                    je Level1
+                cmp countOfLevels, 01h
+                    je Level2
+                cmp countOfLevels, 02h
+                    je Level3
+                cmp countOfLevels, 03h
+                    je Level4
+                cmp countOfLevels, 04h
+                    je Level5
+                ; Fill Levels
+                    Level6:
+                        mov strlevel6[di], al
+                        inc di
+                    jmp Case6
+                    Level1:
+                        mov strlevel1[di], al
+                        inc di
+                    jmp Case6
+                    Level2:
+                        mov strlevel2[di], al
+                        inc di
+                    jmp Case6
+                    Level3:
+                        mov strlevel3[di], al
+                        inc di
+                    jmp Case6
+                    Level4:
+                        mov strlevel4[di], al
+                        inc di
+                    jmp Case6
+                    Level5:
+                        mov strlevel5[di], al
+                        inc di
+                    jmp Case6
+            Case7:
+                inc si
+                cmp string[si], 59
+                    je Case8
+                jmp Case7
+            Case8:
+                inc si
+                cmp string[si], 59
+                    je Case9
+                jmp Case8
+            Case9:
+                inc si
+                cmp string[si], 59
+                    je Case10
+                jmp Case9
+            Case10:
+                inc si
+                cmp string[si], 59
+                    je Case11
+                jmp Case10
+            Case11:
+                inc si
+                cmp string[si], 59
+                    je Case12
+                jmp Case11
+            ; COLOR
+            Case12:
+                
+        EndGC:
+    endm
+
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 ;\\\\\\\\\\\\\\\\\    ADMIN    \\\\\\\\\\\\\\\\\\\\\\\
 ;\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
     TOPPOINTSMACRO macro 
-        local InitialGraph, ENDGC, SelectBubble, SelectQuick
+        local InitialGraph, ENDGC, SelectBubble, SelectQuick, GoToMenu, ShowFile
         ; MOSTRAR ARCHIVO DE TOPS
             BubbleSortNoGraph pointsO, 00h            
             mov ax, pointsO[02h]
             mov MAXVALUE, ax
-        ;CreateTopPointsFile
-
+        ;CreateTopFile
+            ;CreateTopFile
+            ;ShowFile:            
+            ;    getChar
+            ;    cmp al, 32
+            ;        jne ShowFile
         ; MOSTRAR GRAFICA INICIAL                   
             ReadFileOfUsers file
             GraphOnScreen pointsO
@@ -716,13 +919,15 @@ endm
                 je SelectBubble
             cmp ORDERTYPE, 01h
                 je SelectQuick
-            ShellSort pointsO, ascOdesOPT
+            BubbleSort pointsO, ascOdesOPT
+            ;ShellSort pointsO, ascOdesOPT
             jmp ENDGC
             SelectBubble:
                 BubbleSort pointsO, ascOdesOPT
                 jmp ENDGC
             SelectQuick:
-                QuickSort pointsO, ascOdesOPT
+                BubbleSort pointsO, ascOdesOPT
+                ;QuickSort pointsO, ascOdesOPT, 0, count                
         ; ESCUCHAR BARRA PARA TERMINAR
         ENDGC:
             GraphOnScreen pointsO
@@ -735,12 +940,184 @@ endm
             jmp AdminMenu
     endm
 
-    CreateTopPointsFile macro
+    CreateTopFile macro
+        local LoopReport, EndFile, WriteReport, ReadLoop, EndRead, ChangeToPass, ChangeToPoints, ChangeToTimes, ChangeToUser, Times, Points, Pass, Names, PutUserInFile
+        ;Report
+        xor si, si          ; To travel through the Report
+        xor di, di          ; To travel through the fileOfUsers
 
+        ConcatText Report, reportHeader, SIZEOF reportHeader
+        
+        mov indexPoints, 00h
+        mov cx, 0Ah
+        LoopReport:
+            Push cx
+            Push si
+            xor si, si
+            mov cx, SIZEOF file
+            mov bx, 01h
+            ReadLoop:
+                xor ax, ax
+                Push cx
+                mov al, file[si]
+                inc si
+                cmp bx, 01h
+                    je Names
+                cmp bx, 02h
+                    je Pass
+                cmp bx, 03h
+                    je Points
+                cmp bx, 04h
+                    je Times
+                jmp EndFile
+
+                Names:
+                    cmp al, ','
+                        je ChangeToPass
+                    mov auxiliarUser[di], al
+                    inc di
+                    jmp EndRead
+                    ChangeToPass:
+                        print auxiliarUser
+                        getChar
+                        xor di, di
+                        mov bx, 02h
+                        jmp EndRead
+                Pass:
+                    cmp al, ','
+                        je ChangeToPoints
+                    jmp EndRead
+                    ChangeToPoints:
+                        xor di, di
+                        mov bx, 03h
+                        jmp EndRead
+                Points:
+                    cmp al, ','
+                        je ChangeToTimes
+                    mov auxiliarPoint[di], al
+                    inc di
+                    jmp EndRead
+                    ChangeToTimes:
+                        mov di, indexPoints
+                        ConvertToNumber auxiliarPoint
+
+                        cmp ax, pointsO[di]
+                            je PutUserInFile
+                        xor di, di
+                        mov bx, 04h
+                        jmp EndRead
+                        PutUserInFile:
+                            mov FLAGREPORT, 01h
+                            jmp EndRead
+                Times:
+                    cmp al, '#'
+                        je EndFile
+                    cmp al, 59
+                        je ChangeToUser
+                    cmp auxiliarTimes[di], al
+                    inc di
+                    jmp EndRead
+                    ChangeToUser:
+                        cmp FLAGREPORT, 01h
+                            je WriteReport
+                        xor di, di
+                        mov bx, 01h
+                        Clean auxiliarUser, SIZEOF auxiliarUser, '$'
+                        Clean auxiliarPoint , SIZEOF auxiliarPoint, '$'
+                        Clean auxiliarTimes, SIZEOF auxiliarTimes, '$'
+            EndRead:
+                Pop cx
+            dec cx
+                jne ReadLoop
+            WriteReport:
+                Pop si
+                mov Report[si], 13
+                inc si
+                mov Report[si], 10
+                ConcatText Report, auxiliarUser, SIZEOF auxiliarUser
+                mov Report[si], 32
+                inc si
+                mov Report[si], 32
+                inc si
+                mov Report[si], 32
+                inc si
+                ConcatText Report, auxiliarPoint, SIZEOF auxiliarPoint
+                mov Report[si], 32
+                inc si
+                mov Report[si], 32
+                inc si
+                mov Report[si], 32
+                inc si
+                ConcatText Report, auxiliarTimes, SIZEOF auxiliarTimes
+                mov Report[si], 32
+                inc si
+                mov Report[si], 32
+                inc si
+                mov Report[si], 32
+                inc si            
+                mov FLAGREPORT, 00h
+            EndFile:
+                inc indexPoints
+                Pop cx
+        dec cx
+            jne LoopReport
+        
     endm
 
     TOPTIMESMACRO macro
-
+        local InitialGraph, ENDGC, SelectBubble, SelectQuick, GoToMenu
+        ; MOSTRAR ARCHIVO DE TOPS
+            BubbleSortNoGraph timesO, 01h            
+            mov ax, timesO[02h]
+            mov MINVALUE, ax
+        ;CreateTopFile
+            ;CreateTopFile
+            ;ShowFile:            
+            ;    getChar
+            ;    cmp al, 32
+            ;        jne ShowFile
+        ; MOSTRAR GRAFICA INICIAL                   
+            ReadFileOfUsers file
+            GraphOnScreen timesO
+        ; ESCUCHAR BARRA ESPACIADORA
+        InitialGraph:
+            getChar
+            cmp al, 32
+                jne InitialGraph
+        TextMode
+        ; MOSTRAR MENU DE ORDENAMIENTO
+            SelectSortingMethod
+        ; SELECCIONAR VELOCIDAD
+            SelectVelocity
+        ; SELECCIONAR ASCENDENTE O DESCENDENTE
+            SelectAscOrDes
+        ; ESCUCHAR BARRA ESPACIADORA
+            ReadFileOfUsers file
+            GraphOnScreen timesO
+        ; INICIAR ORDENAMIENTO Y GRAFICADA
+            cmp ORDERTYPE, 00h
+                je SelectBubble
+            cmp ORDERTYPE, 01h
+                je SelectQuick
+            BubbleSort timesO, ascOdesOPT
+            ;ShellSort timesO, ascOdesOPT
+            jmp ENDGC
+            SelectBubble:
+                BubbleSort timesO, ascOdesOPT
+                jmp ENDGC
+            SelectQuick:
+                BubbleSort timesO, ascOdesOPT
+                ;QuickSort timesO, ascOdesOPT, 0, count                
+        ; ESCUCHAR BARRA PARA TERMINAR
+        ENDGC:
+            GraphOnScreen timesO
+            getChar
+            cmp al, ' '
+                je GoToMenu
+            jmp ENDGC
+        GoToMenu:
+            TextMode
+            jmp AdminMenu
     endm
 
     SelectSortingMethod macro
@@ -833,7 +1210,7 @@ endm
     endm
 
     SelectAscOrDes macro
-        local begin, EndGC
+        local begin, EndGC, ASC, DES
         begin:
             print msgSelectAoD
             getChar
@@ -1164,9 +1541,7 @@ endm
                     ConvertToNumber auxiliarPoint                    
                     
                     mov pointsO[di], ax
-                    inc di
-                    inc di
-                    mov indexPoints, di
+
                     xor di, di
                     mov bx, 04h
                     jmp EndLoop
@@ -1180,6 +1555,16 @@ endm
                 inc di
                 jmp EndLoop
                 ChangeToUser:
+                    mov di, indexPoints
+
+                    ConvertToNumber auxiliarTimes
+
+                    mov timesO[di], ax
+
+                    inc di
+                    inc di
+                    mov indexPoints, di
+
                     xor di, di
                     mov bx, 01h                    
         

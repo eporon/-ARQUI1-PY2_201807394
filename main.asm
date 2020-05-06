@@ -25,6 +25,7 @@ include macros.asm
     ; LOGIN AND REGISTRY
         msgLoginUser db 'Ingrese Usuario: ', '$'
         msgLoginPass db 'Ingrese Contrasenia: ', '$'
+        msgEnterPlay db 'Ingrese archivo .ply: ', '$'
         auxUser db 20 dup('$')
         auxPass db 20 dup('$')
     
@@ -51,7 +52,7 @@ include macros.asm
         pointsF dw 20 dup(0)
 
         indexTimes dw 00h
-        timesO dw 20 dup(0)
+        timesO dw 50 dup(0)
         timesF dw 20 dup(0)
 
         ascOdesOPT db 00h
@@ -80,13 +81,12 @@ include macros.asm
         ; TYPE OF ORDER             00 -> Bubblue. 01 -> Quick. 02 -> Shell
             ORDERTYPE db 00h
         ; REPORT OF TOPs
-            pointsReportRoute db 'puntos.rep', 00h
-            pointsReport db 10000 dup(32)
-            pointsHandler dw ?
+            reportHeader db '           TOP 10 PUNTOS', 13, 10
+            ReportRoute db 'puntos.rep', 00h
+            Report db 10000 dup('$')
+            reportHandler dw ?
 
             timesReportRoute db 'tiempos.rep', 00h
-            timesReport db 10000 dup(32)
-            timesHandler dw ?
             xPos db 00h
             xPos2 dw 00h
             yPos db 00h
@@ -95,6 +95,10 @@ include macros.asm
             forV dw 00h
             forV2 dw 00h
             number db '00'
+            pivot dw 00h
+            MINORV dw 00h
+            MAJORV dw 00h
+            FLAGREPORT dw 00h
 
     ; GAME VARIABLES
         levelsRoute db 20 dup(00h)
@@ -113,10 +117,23 @@ include macros.asm
         auxiliarPass db '0000', '$$'
         auxiliarPoint db '00', '$'
         auxiliarTimes db '00', '$'
-        MAXVALUE dw 00h
+        MAXVALUE dw 00h                 ; For top of points
+        MINVALUE dw 00h                 ; For the top of times
         WIDTHVALUE dw 00h
         HEIGHTVALUE dw 00h
         time dw 05h
+
+        playFile db 1000 dup('$')
+        playHandler dw ?
+        routeLevel db 20 dup(00h)        
+        colors db 6 dup(00h)            ; Color of the vehicle
+        strlevel1 db '$$$$$$$', '$'
+        strlevel2 db '$$$$$$$', '$'
+        strlevel3 db '$$$$$$$', '$'
+        strlevel4 db '$$$$$$$', '$'
+        strlevel5 db '$$$$$$$', '$'
+        strlevel6 db '$$$$$$$', '$'
+        countOfLevels dw 00h
 
     ; ERRORS
         errorLogin db 'Usuario o contrasenia incorrecto', '$'
@@ -129,6 +146,7 @@ include macros.asm
         msgErrorRead db 'Error al leer el archivo', '$'
         msgErrorMaxUsers db 'Error, maximo numero de usuarios alcanzado', '$'
         msgErrorNoData db 'No hay informacion cargada en los tops', '$'
+        msgErrorFile db 'Error en el archivo de entrada', '$'
 
 ; CODE SEGMENT
 .code
@@ -219,8 +237,24 @@ main proc
 
         Play:
 
+            jmp UserMenu
         ChargeGame:
+            print newLine
+            Clean playFile, SIZEOF playFile, '$'
+            Clean routeLevel, SIZEOF routeLevel, 00h
 
+            print msgEnterPlay
+            getRoute routeLevel
+
+            ;CheckRoute routeLevel
+
+            OpenFile routeLevel, playHandler
+
+            ReadFile playHandler, playFile, SIZEOF playFile
+
+            CloseFile playHandler
+            
+            ReadFileOfLevels playFile
         jmp UserMenu
     AdminMenu:
         ClearConsole
@@ -317,6 +351,11 @@ main proc
             getChar
             ClearConsole
             jmp Start
+        JErrorOnFile:
+            print msgErrorFile
+            getChar
+            ClearConsole
+            jmp UserMenu
 main endp
 
 end

@@ -10,13 +10,14 @@ include macros.asm
 
     ; TESTING
         testing db 'TEST', '$'
+        aber db 'Esta aqui', '$'
     ; END TESTING
 
     ; SPECIAL CHARACTERS
         newLine db 13, 10, '$'
         cleanChar db '             ', '$'
         tab db 9, '$'
-        endPrint db '$'
+        
     ; END SPECIAL CHARACTERS
 
     ; PRINCIPAL MENU
@@ -24,6 +25,7 @@ include macros.asm
     ; LOGIN AND REGISTRY
         msgLoginUser db 'Ingrese Usuario: ', '$'
         msgLoginPass db 'Ingrese Contrasenia: ', '$'
+        msgEnterPlay db 'Ingrese archivo .ply: ', '$'
         auxUser db 20 dup('$')
         auxPass db 20 dup('$')
     
@@ -32,29 +34,79 @@ include macros.asm
 
     ; ADMIN MENU
         msgHeaderAdmin db 13, 10, 9, 'UNIVERSIDAD DE SAN CARLOS DE GUATEMALA', 13, 10, 9, 'FACULTAD DE INGENIERIA', 13, 10, 9, 'CIENCIAS Y SISTEMAS', 13, 10, 9, 'ARQUITECTURA DE COMPUTADORES Y ENSAMBLADORES 1', 13, 10, 9, 'NOMBRE: ANGEL MANUEL MIRANDA ASTURIAS', 13, 10, 9, 'CARNET: 201807394', 13, 10, 9, 'SECCION: A', 13, 10, 13, 10, 9, 9, '1.) Top 10 puntos', 13, 10, 9, 9, '2.) Top 10 tiempo', 13, 10, 9, 9, '3.) Salir', 13, 10, '$'
-
+        msgSelectSort db 13, 10, 9, 'Escoga que ordenamiento realizar: ', 13, 10, 9, 9, '1) BubblueSort', 13, 10, 9, 9, '2) QuickSort', 13, 10, 9, 9, '3) ShellSort',13, 10, '$'
+        msgSelectVel db 13, 10, 9, 'Escoga la velocidad de ordenamiento (0~9): ', '$'
+        msgSelectAoD db 13, 10, 9, 'Escoga el modo de ordenamiento: ', 13, 10, 9, 9, '1) Ascendente', 13, 10, 9, 9, '2) Descendente', 13, 10, '$'
     ; USERS
-        file db 1500 dup('$')
+        file db 1500 dup(32)
         route db 'users.us', 00h
         handlerUsers dw ?
 
     ; ADMIN VARIABLES8
-        adminUs db 'admin', '$'
+        adminUs db 'admin', '$$$$$$$$$$$$$$$'
         adminPass db '1234', '$'
-        points dw 25 dup(0)
-        times dW 25 dup(0)
+
+        indexPoints dw 00h
+        pointsO dw 50 dup(00h)        
+        pointsF dw 20 dup(0)
+
+        indexTimes dw 00h
+        timesO dw 50 dup(0)
+        timesF dw 20 dup(0)
+
         ascOdesOPT db 00h
-        time db 00h
+        velocity db 00h
+        count dw 00h
+
+        ; SORTS
+            strBubble db ' ORDENAMIENTO: BUBBLESORT'
+            strQuick db  ' ORDENAMIENTO: QUICKSORT'
+            strShell db  ' ORDENAMIENTO: SHELLSORT'
+
+            strTimes db 'TIEMPO: '
+            strSeconds db ' 00:00'
+
+            strVelocity db ' VELOCIDAD: '
+            selectedVel db 00H
+
 
         ; COLORS
-            red db 04h
-            blue db 01h
-            yellow db 0eh
-            green db 02h
-            white db 0Fh
+            RED db 04h
+            BLUE db 01h
+            YELLOW db 0eh
+            GREEN db 02h
+            WHITE db 0Fh
+            SELECTEDCOLOR db 00h
+        ; TYPE OF ORDER             00 -> Bubblue. 01 -> Quick. 02 -> Shell
+            ORDERTYPE db 00h
+        ; REPORT OF TOPs
+            reportHeader db '           TOP 10 PUNTOS', 13, 10
+            ReportRoute db 'puntos.rep', 00h
+            Report db 10000 dup('$')
+            reportHandler dw ?
+
+            timesReportRoute db 'tiempos.rep', 00h
+            xPos db 00h
+            xPos2 dw 00h
+            xFinal dw 280
+            yPos db 00h
+            yPos2 dw 00h
+
+            forV dw 00h
+            forV2 dw 00h
+            number db '00'
+            pivot dw 00h
+            MINORV dw 00h
+            MAJORV dw 00h
+            FLAGREPORT dw 00h
+            ACTUALCOLOR db 00h
 
     ; GAME VARIABLES
+        levelsRoute db 20 dup(00h)
+        levelsFile db 1500 dup('$')
+
         actualUser db 20 dup('$')
+        nameToShow db 20 dup(00h)
         actualPass db 20 dup('$')
         actualLevel db 20 dup('$')
         ; pointsNumber 
@@ -67,6 +119,31 @@ include macros.asm
         auxiliarPass db '0000', '$$'
         auxiliarPoint db '00', '$'
         auxiliarTimes db '00', '$'
+        MAXVALUE dw 00h                 ; For top of points
+        MINVALUE dw 00h                 ; For the top of times
+        WIDTHVALUE dw 00h
+        HEIGHTVALUE dw 00h
+        time dw 05h
+
+        playFile db 1000 dup('$')
+        playHandler dw ?
+        routeLevel db 20 dup(00h)        
+        colors db 20 dup(00h)            ; Color of the vehicle
+        strlevel1 db '$$$$$$$', '$'
+        strlevel2 db '$$$$$$$', '$'
+        strlevel3 db '$$$$$$$', '$'
+        strlevel4 db '$$$$$$$', '$'
+        strlevel5 db '$$$$$$$', '$'
+        strlevel6 db '$$$$$$$', '$'
+        countOfLevels dw 00h
+        endPrint db '$'
+        msgPause db 'PAUSA     '
+
+        auxiliarColor db '$$$$$$$$$$', '$'
+        strRed db 'rojo'
+        strBlue db 'azul'
+        strGreen db 'verde'
+        strWhite db 'blanco'
 
     ; ERRORS
         errorLogin db 'Usuario o contrasenia incorrecto', '$'
@@ -77,6 +154,10 @@ include macros.asm
         msgErrorCreate db 'Error al crear el archivo', '$'
         msgErrorClose db 'Error al cerrar el archivo', '$'
         msgErrorRead db 'Error al leer el archivo', '$'
+        msgErrorMaxUsers db 'Error, maximo numero de usuarios alcanzado', '$'
+        msgErrorNoData db 'No hay informacion cargada en los tops', '$'
+        msgErrorFile db 'Error en el archivo de entrada', '$'
+        msgErrorNoGame db 'Error, no ha ingresado informacion para el juego', '$'
 
 ; CODE SEGMENT
 .code
@@ -107,10 +188,10 @@ main proc
         EnterUser:
             Clean actualUser, SIZEOF actualUser, '$'
 
-            print msgLoginUser        
+            print msgLoginUser
             getText actualUser
 
-            xor ax, ax            
+            xor ax, ax
 
             CheckExistingUser actualUser            
 
@@ -166,9 +247,27 @@ main proc
         jmp UserMenu
 
         Play:
-
+            cmp colors[00h], 00h
+                je JErrorNoDataGame
+            PlayGame
+            jmp UserMenu
         ChargeGame:
+            print newLine
+            Clean playFile, SIZEOF playFile, '$'
+            Clean routeLevel, SIZEOF routeLevel, 00h
 
+            print msgEnterPlay
+            getRoute routeLevel
+
+            ;CheckRoute routeLevel
+
+            OpenFile routeLevel, playHandler
+
+            ReadFile playHandler, playFile, SIZEOF playFile
+
+            CloseFile playHandler
+            
+            ReadFileOfLevels playFile            
         jmp UserMenu
     AdminMenu:
         ClearConsole
@@ -187,9 +286,14 @@ main proc
         jmp AdminMenu
 
         Top10Points:
-
+            cmp count, 0
+                je JErrorNoData
+            TOPPOINTSMACRO
+            jmp AdminMenu
         Top10Times:
-
+            cmp count, 0
+                je JErrorNoData
+            TOPTIMESMACRO
         jmp AdminMenu
     Exit:
         mov ah, 4ch     ; END PROGRAM
@@ -250,6 +354,26 @@ main proc
             getChar
             ClearConsole
             jmp Login
+        JErrorMaxUsers:
+            print msgErrorMaxUsers
+            getChar
+            ClearConsole
+            jmp Start
+        JErrorNoData:
+            print msgErrorNoData
+            getChar
+            ClearConsole
+            jmp Start
+        JErrorOnFile:
+            print msgErrorFile
+            getChar
+            ClearConsole
+            jmp UserMenu
+        JErrorNoDataGame:
+            print msgErrorNoGame
+            getChar
+            ClearConsole
+            jmp UserMenu
 main endp
 
 end
